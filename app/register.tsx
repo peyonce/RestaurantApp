@@ -1,5 +1,4 @@
-// SIMPLE WORKING REGISTER SCREEN
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,7 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useAuth } from './contexts/AuthProvider';
 
 export default function RegisterScreen() {
@@ -24,9 +23,30 @@ export default function RegisterScreen() {
     password: '',
     confirmPassword: '',
   });
-  const { signUp: register, loading: isLoading } = useAuth();
+  const { signUp: register, loading: isLoading, user } = useAuth();
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+  const router = useRouter();
+
+  console.log('DEBUG - isLoading:', isLoading);
+  console.log('DEBUG - showSuccess:', showSuccess);
+  console.log('DEBUG - formData:', formData);
+  console.log('DEBUG - All fields filled:', 
+    formData.name && formData.surname && formData.email && 
+    formData.password && formData.confirmPassword
+  );
+
+  // Check if user is logged in and redirect
+  useEffect(() => {
+    if (user) {
+      console.log('DEBUG - User detected, redirecting...');
+      router.replace('/(tabs)');
+    }
+  }, [user]);
 
   const handleSignup = async () => {
+    console.log('DEBUG - handleSignup called');
+    
     const { name, surname, email, password, confirmPassword } = formData;
 
     // Validation
@@ -45,21 +65,40 @@ export default function RegisterScreen() {
       return;
     }
 
+    console.log('DEBUG - Calling register function...');
     const result = await register({ 
-      name, 
-      surname, 
-      email, 
+      email,
       password,
+      name,
+      surname,
       phone: '',
       address: ''
     });
 
+    console.log('DEBUG - Register result:', result);
+
     if (result.success) {
-      // Navigation happens in AuthContext
+      // Show success tick
+      setShowSuccess(true);
+      
+      // Show success message
       Alert.alert('Success', result.message || 'Account created successfully!');
+      
+      // Automatically redirect after 2 seconds
+      setTimeout(() => {
+        router.replace('/(tabs)');
+      }, 2000);
     } else {
       Alert.alert('Signup Failed', result.message || 'Failed to create account');
     }
+  };
+
+  // Calculate if button should be disabled
+  const isFormValid = () => {
+    const { name, surname, email, password, confirmPassword } = formData;
+    return name && surname && email && password && confirmPassword && 
+           password === confirmPassword && 
+           password.length >= 6;
   };
 
   return (
@@ -84,7 +123,7 @@ export default function RegisterScreen() {
                 placeholderTextColor="#999"
                 value={formData.name}
                 onChangeText={(text) => setFormData({...formData, name: text})}
-                editable={!isLoading}
+                editable={!isLoading && !showSuccess}
               />
             </View>
 
@@ -95,7 +134,7 @@ export default function RegisterScreen() {
                 placeholderTextColor="#999"
                 value={formData.surname}
                 onChangeText={(text) => setFormData({...formData, surname: text})}
-                editable={!isLoading}
+                editable={!isLoading && !showSuccess}
               />
             </View>
           </View>
@@ -110,7 +149,7 @@ export default function RegisterScreen() {
               onChangeText={(text) => setFormData({...formData, email: text})}
               autoCapitalize="none"
               keyboardType="email-address"
-              editable={!isLoading}
+              editable={!isLoading && !showSuccess}
             />
           </View>
 
@@ -123,7 +162,7 @@ export default function RegisterScreen() {
               value={formData.password}
               onChangeText={(text) => setFormData({...formData, password: text})}
               secureTextEntry
-              editable={!isLoading}
+              editable={!isLoading && !showSuccess}
             />
           </View>
 
@@ -136,24 +175,38 @@ export default function RegisterScreen() {
               value={formData.confirmPassword}
               onChangeText={(text) => setFormData({...formData, confirmPassword: text})}
               secureTextEntry
-              editable={!isLoading}
+              editable={!isLoading && !showSuccess}
             />
           </View>
 
           <TouchableOpacity 
-            style={[styles.signupButton, isLoading && styles.disabledButton]} 
+            style={[
+              styles.signupButton, 
+              (!isFormValid() || isLoading || showSuccess) && styles.disabledButton
+            ]} 
             onPress={handleSignup}
-            disabled={isLoading}
+            disabled={!isFormValid() || isLoading || showSuccess}
           >
             {isLoading ? (
               <ActivityIndicator color="#1a1a1a" />
+            ) : showSuccess ? (
+              <>
+                <FontAwesome name="check-circle" size={24} color="#1a1a1a" />
+                <Text style={styles.signupButtonText}>Account Created!</Text>
+              </>
             ) : (
               <>
-                <Text style={styles.signupButtonText}>Create Account</Text>
-                <FontAwesome name="check-circle" size={20} color="#1a1a1a" />
+                <Text style={styles.signupButtonText}>
+                  {isFormValid() ? 'Create Account' : 'Fill All Fields'}
+                </Text>
+                {isFormValid() && <FontAwesome name="arrow-right" size={20} color="#1a1a1a" />}
               </>
             )}
           </TouchableOpacity>
+
+          {isFormValid() && (
+            <Text style={styles.readyText}>✓ All fields are valid. Press "Create Account"</Text>
+          )}
 
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
@@ -162,7 +215,7 @@ export default function RegisterScreen() {
           </View>
 
           <Link href="/login" asChild>
-            <TouchableOpacity style={styles.loginButton} disabled={isLoading}>
+            <TouchableOpacity style={styles.loginButton} disabled={isLoading || showSuccess}>
               <Text style={styles.loginButtonText}>Sign In Instead</Text>
               <FontAwesome name="sign-in" size={16} color="#FFD700" />
             </TouchableOpacity>
@@ -242,12 +295,19 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   disabledButton: {
-    opacity: 0.7,
+    backgroundColor: '#666',
+    opacity: 0.6,
   },
   signupButtonText: {
     color: '#1a1a1a',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  readyText: {
+    color: '#4CAF50',
+    textAlign: 'center',
+    marginTop: 10,
+    fontSize: 14,
   },
   divider: {
     flexDirection: 'row',
