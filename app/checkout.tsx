@@ -15,33 +15,21 @@ import { router } from 'expo-router';
 import { useAuth } from './contexts/AuthProvider';
 import { useCart } from './contexts/CartProvider';
 
-// Try to import Firebase database service, but don't crash if it fails
+// Firebase order service
 let createOrder: any = null;
-
 try {
   const databaseModule = require('./services/_database');
   createOrder = databaseModule.createOrder;
 } catch (error) {
-  console.warn('Database service not available:', error);
+  console.warn('Database service not available, using local storage:', error);
 }
 
 export default function CheckoutScreen() {
   const { user } = useAuth();
-  const cartContext = useCart();
+  const { items, total, clearCart } = useCart();
   
-  // Debug: Log what cartContext contains
-  console.log('Cart Context:', cartContext);
-  console.log('Cart Context keys:', Object.keys(cartContext || {}));
-  
-  // Try different possible properties from CartProvider
-  const items = cartContext?.items || cartContext?.cartItems || cartContext?.cart?.items || [];
-  const total = cartContext?.total || cartContext?.cartTotal || cartContext?.cart?.total || 0;
-  const clearCart = cartContext?.clearCart || cartContext?.clear || (() => {
-    console.log('Clear cart function not found');
-  });
-  
-  console.log('Items found:', items);
-  console.log('Total found:', total);
+  console.log('Checkout - Items:', items);
+  console.log('Checkout - Total:', total);
   
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('cash');
   const [deliveryAddress, setDeliveryAddress] = useState('');
@@ -49,12 +37,10 @@ export default function CheckoutScreen() {
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [tipAmount, setTipAmount] = useState(5);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  // Load user address if available
   useEffect(() => {
-    if (user) {
-      setPhoneNumber(user.phoneNumber || '');
+    if (user?.phoneNumber) {
+      setPhoneNumber(user.phoneNumber);
     }
   }, [user]);
 
@@ -63,14 +49,7 @@ export default function CheckoutScreen() {
   const tipValue = (total * tipAmount) / 100;
   const orderTotal = total + deliveryFee + tipValue;
 
-  // Validate form
   const validateForm = () => {
-    console.log('Validating form...');
-    console.log('Delivery address:', deliveryAddress);
-    console.log('Phone number:', phoneNumber);
-    console.log('Items length:', items.length);
-    console.log('User:', user?.uid);
-    
     if (!deliveryAddress.trim()) {
       Alert.alert('Error', 'Please enter delivery address');
       return false;
@@ -92,39 +71,23 @@ export default function CheckoutScreen() {
   };
 
   const handlePlaceOrder = async () => {
-    console.log('=== PLACE ORDER CLICKED ===');
-    console.log('Items to order:', items);
-    console.log('Total amount:', total);
+    if (isPlacingOrder) return;
     
-    if (isPlacingOrder || loading) {
-      console.log('Already processing order');
-      return;
-    }
-    
-    if (!validateForm()) {
-      console.log('Form validation failed');
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsPlacingOrder(true);
-    setLoading(true);
 
     try {
       // Prepare order items
-      const orderItems = items.map((item: any, index: number) => {
-        console.log(`Item ${index}:`, item);
-        return {
-          menuItemId: item.id || item.menuItemId || `item_${Date.now()}_${index}`,
-          name: item.name || item.title || 'Unknown Item',
-          quantity: item.quantity || 1,
-          price: item.price || 0,
-          specialInstructions: item.specialInstructions || item.instructions || '',
-          imageUrl: item.image || item.imageUrl || ''
-        };
-      });
+      const orderItems = items.map(item => ({
+        menuItemId: item.menuItemId,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        specialInstructions: item.specialInstructions || '',
+        imageUrl: item.imageUrl || ''
+      }));
 
-      console.log('Prepared order items:', orderItems);
-      
       // Prepare order data
       const orderData = {
         userId: user!.uid,
@@ -135,63 +98,38 @@ export default function CheckoutScreen() {
         subtotal: total,
         deliveryFee: deliveryFee,
         tipAmount: tipValue,
-        status: 'pending' as const,
+        status: 'pending',
         deliveryAddress,
         phoneNumber,
         specialInstructions,
         paymentMethod,
-        paymentStatus: paymentMethod === 'cash' ? 'pending' : 'completed' as const,
-        notes: `Tip: ${tipAmount}% (R${tipValue.toFixed(2)})`,
+        paymentStatus: paymentMethod === 'cash' ? 'pending' : 'completed',
+        notes: `Tip: ${tipAmount}%`,
         createdAt: new Date().toISOString()
       };
 
-      console.log('Order data to save:', orderData);
+      console.log('Placing order with data:', orderData);
       
-      // Try to save to Firebase if available
       let orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      // First, try to clear cart before saving order (so user sees empty cart immediately)
-      console.log('Clearing cart...');
-      if (clearCart && typeof clearCart === 'function') {
-        clearCart();
-        console.log('Cart cleared successfully');
-      } else {
-        console.warn('Clear cart function not available or not a function');
-      }
-      
+      // Try to save to Firebase if available
       if (createOrder) {
         try {
-          console.log('Attempting to save to Firebase...');
           const order = await createOrder(orderData);
           orderId = order.id;
           console.log('Order saved to Firebase:', orderId);
         } catch (firebaseError) {
-          console.warn('Failed to save to Firebase:', firebaseError);
-          // Save to local storage as fallback
-          try {
-            const orders = JSON.parse(localStorage.getItem('localOrders') || '[]');
-            orders.push({ id: orderId, ...orderData });
-            localStorage.setItem('localOrders', JSON.stringify(orders));
-            console.log('Order saved locally:', orderId);
-          } catch (e) {
-            console.warn('Local storage not available:', e);
-          }
+          console.warn('Failed to save to Firebase, using local storage:', firebaseError);
+          saveToLocalStorage(orderId, orderData);
         }
       } else {
-        // Save to local storage
-        try {
-          console.log('Saving to local storage...');
-          const orders = JSON.parse(localStorage.getItem('localOrders') || '[]');
-          orders.push({ id: orderId, ...orderData });
-          localStorage.setItem('localOrders', JSON.stringify(orders));
-          console.log('Order saved locally:', orderId);
-        } catch (e) {
-          console.warn('Local storage not available:', e);
-        }
+        saveToLocalStorage(orderId, orderData);
       }
       
+      // Clear cart
+      await clearCart();
+      
       // Show success message
-      console.log('Showing success alert...');
       Alert.alert(
         'Order Placed Successfully! 🎉',
         `Order #${orderId.substring(0, 8)} has been placed.\n\nTotal: R${orderTotal.toFixed(2)}\n\nYou will receive a confirmation shortly.`,
@@ -199,14 +137,12 @@ export default function CheckoutScreen() {
           {
             text: 'Track Order',
             onPress: () => {
-              console.log('Navigating to order details:', orderId);
               router.push(`/order-details/${orderId}`);
             }
           },
           {
             text: 'Continue Shopping',
             onPress: () => {
-              console.log('Navigating back to home');
               router.replace('/(tabs)');
             },
             style: 'default'
@@ -222,7 +158,17 @@ export default function CheckoutScreen() {
       );
     } finally {
       setIsPlacingOrder(false);
-      setLoading(false);
+    }
+  };
+
+  const saveToLocalStorage = (orderId: string, orderData: any) => {
+    try {
+      const orders = JSON.parse(localStorage.getItem('localOrders') || '[]');
+      orders.push({ id: orderId, ...orderData });
+      localStorage.setItem('localOrders', JSON.stringify(orders));
+      console.log('Order saved locally:', orderId);
+    } catch (e) {
+      console.warn('Local storage not available:', e);
     }
   };
 
@@ -258,22 +204,17 @@ export default function CheckoutScreen() {
           </Text>
           
           {items.length > 0 ? (
-            items.map((item: any, index: number) => (
+            items.map((item, index) => (
               <View key={item.id || index} style={styles.cartItem}>
                 <View style={styles.itemInfo}>
-                  <Text style={styles.itemName}>
-                    {item.name || item.title || `Item ${index + 1}`}
-                  </Text>
+                  <Text style={styles.itemName}>{item.name}</Text>
                   <Text style={styles.itemDetails}>
-                    {item.quantity || 1} × {formatCurrency(item.price || 0)}
+                    {item.quantity} × {formatCurrency(item.price)}
                     {item.specialInstructions && ` (${item.specialInstructions})`}
-                  </Text>
-                  <Text style={styles.debugText}>
-                    ID: {item.id || 'no-id'} | Type: {typeof item}
                   </Text>
                 </View>
                 <Text style={styles.itemTotal}>
-                  {formatCurrency((item.price || 0) * (item.quantity || 1))}
+                  {formatCurrency(item.price * item.quantity)}
                 </Text>
               </View>
             ))
@@ -281,216 +222,195 @@ export default function CheckoutScreen() {
             <View style={styles.emptyCart}>
               <FontAwesome name="shopping-cart" size={40} color="#666" />
               <Text style={styles.emptyCartText}>Your cart is empty</Text>
-              <Text style={styles.debugHint}>
-                Check console for cart context details
-              </Text>
             </View>
           )}
         </View>
 
-        {/* Delivery Details */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Delivery Details</Text>
-          
-          <View style={styles.inputContainer}>
-            <FontAwesome name="map-marker" size={20} color="#FFD700" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Delivery Address *"
-              placeholderTextColor="#999"
-              value={deliveryAddress}
-              onChangeText={setDeliveryAddress}
-              multiline
-              numberOfLines={3}
-              editable={!isPlacingOrder}
-            />
-          </View>
+        {items.length > 0 && (
+          <>
+            {/* Delivery Details */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Delivery Details</Text>
+              
+              <View style={styles.inputContainer}>
+                <FontAwesome name="map-marker" size={20} color="#FFD700" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Delivery Address *"
+                  placeholderTextColor="#999"
+                  value={deliveryAddress}
+                  onChangeText={setDeliveryAddress}
+                  multiline
+                  numberOfLines={3}
+                  editable={!isPlacingOrder}
+                />
+              </View>
 
-          <View style={styles.inputContainer}>
-            <FontAwesome name="phone" size={20} color="#FFD700" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Phone Number *"
-              placeholderTextColor="#999"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              keyboardType="phone-pad"
-              editable={!isPlacingOrder}
-            />
-          </View>
+              <View style={styles.inputContainer}>
+                <FontAwesome name="phone" size={20} color="#FFD700" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Phone Number *"
+                  placeholderTextColor="#999"
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  keyboardType="phone-pad"
+                  editable={!isPlacingOrder}
+                />
+              </View>
 
-          <View style={styles.inputContainer}>
-            <FontAwesome name="sticky-note" size={20} color="#FFD700" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Special Instructions (optional)"
-              placeholderTextColor="#999"
-              value={specialInstructions}
-              onChangeText={setSpecialInstructions}
-              multiline
-              numberOfLines={2}
-              editable={!isPlacingOrder}
-            />
-          </View>
-        </View>
+              <View style={styles.inputContainer}>
+                <FontAwesome name="sticky-note" size={20} color="#FFD700" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Special Instructions (optional)"
+                  placeholderTextColor="#999"
+                  value={specialInstructions}
+                  onChangeText={setSpecialInstructions}
+                  multiline
+                  numberOfLines={2}
+                  editable={!isPlacingOrder}
+                />
+              </View>
+            </View>
 
-        {/* Tip Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Add a Tip</Text>
-          <View style={styles.tipContainer}>
-            {[0, 5, 10, 15, 20].map((tip) => (
+            {/* Tip Selection */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Add a Tip</Text>
+              <View style={styles.tipContainer}>
+                {[0, 5, 10, 15, 20].map((tip) => (
+                  <TouchableOpacity
+                    key={tip}
+                    style={[
+                      styles.tipButton,
+                      tipAmount === tip && styles.tipButtonSelected,
+                    ]}
+                    onPress={() => setTipAmount(tip)}
+                    activeOpacity={0.7}
+                    disabled={isPlacingOrder}
+                  >
+                    <Text
+                      style={[
+                        styles.tipText,
+                        tipAmount === tip && styles.tipTextSelected,
+                      ]}
+                    >
+                      {tip === 0 ? 'No tip' : `${tip}%`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Payment Method */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Payment Method</Text>
+              
               <TouchableOpacity
-                key={tip}
                 style={[
-                  styles.tipButton,
-                  tipAmount === tip && styles.tipButtonSelected,
+                  styles.paymentCard,
+                  paymentMethod === 'cash' && styles.paymentCardSelected,
                 ]}
-                onPress={() => setTipAmount(tip)}
+                onPress={() => setPaymentMethod('cash')}
                 activeOpacity={0.7}
                 disabled={isPlacingOrder}
               >
-                <Text
-                  style={[
-                    styles.tipText,
-                    tipAmount === tip && styles.tipTextSelected,
-                  ]}
-                >
-                  {tip === 0 ? 'No tip' : `${tip}%`}
-                </Text>
+                <FontAwesome name="money" size={24} color="#FFD700" />
+                <View style={styles.paymentInfo}>
+                  <Text style={styles.paymentTitle}>Cash on Delivery</Text>
+                  <Text style={styles.paymentDescription}>Pay when food arrives</Text>
+                </View>
+                {paymentMethod === 'cash' && (
+                  <FontAwesome name="check-circle" size={24} color="#4CAF50" />
+                )}
               </TouchableOpacity>
-            ))}
-          </View>
-        </View>
 
-        {/* Payment Method */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Payment Method</Text>
-          
-          <TouchableOpacity
-            style={[
-              styles.paymentCard,
-              paymentMethod === 'cash' && styles.paymentCardSelected,
-            ]}
-            onPress={() => setPaymentMethod('cash')}
-            activeOpacity={0.7}
-            disabled={isPlacingOrder}
-          >
-            <FontAwesome name="money" size={24} color="#FFD700" />
-            <View style={styles.paymentInfo}>
-              <Text style={styles.paymentTitle}>Cash on Delivery</Text>
-              <Text style={styles.paymentDescription}>Pay when food arrives</Text>
+              <TouchableOpacity
+                style={[
+                  styles.paymentCard,
+                  paymentMethod === 'card' && styles.paymentCardSelected,
+                ]}
+                onPress={() => setPaymentMethod('card')}
+                activeOpacity={0.7}
+                disabled={isPlacingOrder}
+              >
+                <FontAwesome name="credit-card" size={24} color="#FFD700" />
+                <View style={styles.paymentInfo}>
+                  <Text style={styles.paymentTitle}>Card Payment</Text>
+                  <Text style={styles.paymentDescription}>Pay now with card</Text>
+                </View>
+                {paymentMethod === 'card' && (
+                  <FontAwesome name="check-circle" size={24} color="#4CAF50" />
+                )}
+              </TouchableOpacity>
             </View>
-            {paymentMethod === 'cash' && (
-              <FontAwesome name="check-circle" size={24} color="#4CAF50" />
-            )}
-          </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.paymentCard,
-              paymentMethod === 'card' && styles.paymentCardSelected,
-            ]}
-            onPress={() => setPaymentMethod('card')}
-            activeOpacity={0.7}
-            disabled={isPlacingOrder}
-          >
-            <FontAwesome name="credit-card" size={24} color="#FFD700" />
-            <View style={styles.paymentInfo}>
-              <Text style={styles.paymentTitle}>Card Payment</Text>
-              <Text style={styles.paymentDescription}>Pay now with card</Text>
+            {/* Order Summary */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Order Summary</Text>
+              <View style={styles.summaryCard}>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Subtotal</Text>
+                  <Text style={styles.summaryValue}>{formatCurrency(total)}</Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Delivery Fee</Text>
+                  <Text style={styles.summaryValue}>
+                    {deliveryFee === 0 ? 'FREE' : formatCurrency(deliveryFee)}
+                  </Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Tip ({tipAmount}%)</Text>
+                  <Text style={styles.summaryValue}>{formatCurrency(tipValue)}</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Total</Text>
+                  <Text style={styles.totalValue}>{formatCurrency(orderTotal)}</Text>
+                </View>
+              </View>
             </View>
-            {paymentMethod === 'card' && (
-              <FontAwesome name="check-circle" size={24} color="#4CAF50" />
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Order Summary */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Order Summary</Text>
-          <View style={styles.summaryCard}>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Subtotal</Text>
-              <Text style={styles.summaryValue}>
-                {items.length > 0 ? formatCurrency(total) : 'R0.00'}
-                {items.length === 0 && ' (empty)'}
-              </Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Delivery Fee</Text>
-              <Text style={styles.summaryValue}>
-                {total > 200 ? 'FREE' : formatCurrency(25)}
-              </Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Tip ({tipAmount}%)</Text>
-              <Text style={styles.summaryValue}>{formatCurrency(tipValue)}</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalValue}>{formatCurrency(orderTotal)}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Debug info */}
-        {__DEV__ && (
-          <View style={styles.debugSection}>
-            <Text style={styles.debugTitle}>Debug Info</Text>
-            <Text style={styles.debugText}>Items in cart: {items.length}</Text>
-            <Text style={styles.debugText}>Total: R{total}</Text>
-            <Text style={styles.debugText}>User: {user ? user.email : 'Not logged in'}</Text>
-          </View>
+          </>
         )}
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
       {/* Place Order Button */}
-      <View style={styles.footer}>
-        <TouchableOpacity 
-          style={[
-            styles.placeOrderButton, 
-            (isPlacingOrder || loading || items.length === 0 || !user) && styles.placeOrderButtonDisabled
-          ]} 
-          onPress={handlePlaceOrder}
-          disabled={isPlacingOrder || loading || items.length === 0 || !user}
-          activeOpacity={0.7}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          {isPlacingOrder || loading ? (
-            <View style={styles.processingContainer}>
-              <ActivityIndicator color="#1a1a1a" size="small" />
-              <Text style={styles.placeOrderText}>Processing Order...</Text>
-            </View>
-          ) : (
-            <>
-              <Text style={styles.placeOrderText}>
-                {items.length === 0 ? 'Cart Empty' : !user ? 'Login Required' : 'Place Order'}
-              </Text>
-              {items.length > 0 && user && (
-                <Text style={styles.orderTotal}>{formatCurrency(orderTotal)}</Text>
-              )}
-            </>
-          )}
-        </TouchableOpacity>
-        
-        {!user && items.length > 0 && (
-          <Text style={styles.loginHint}>
-            Please login to place an order
-          </Text>
-        )}
-        
-        {items.length === 0 && (
+      {items.length > 0 && (
+        <View style={styles.footer}>
           <TouchableOpacity 
-            style={styles.continueShoppingButton}
-            onPress={() => router.push('/(tabs)/menu')}
+            style={[
+              styles.placeOrderButton, 
+              (isPlacingOrder || !user) && styles.placeOrderButtonDisabled
+            ]} 
+            onPress={handlePlaceOrder}
+            disabled={isPlacingOrder || !user}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Text style={styles.continueShoppingText}>Continue Shopping</Text>
+            {isPlacingOrder ? (
+              <View style={styles.processingContainer}>
+                <ActivityIndicator color="#1a1a1a" size="small" />
+                <Text style={styles.placeOrderText}>Processing Order...</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.placeOrderText}>
+                  {!user ? 'Login Required' : 'Place Order'}
+                </Text>
+                <Text style={styles.orderTotal}>{formatCurrency(orderTotal)}</Text>
+              </>
+            )}
           </TouchableOpacity>
-        )}
-      </View>
+          
+          {!user && (
+            <Text style={styles.loginHint}>
+              Please login to place an order
+            </Text>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -585,12 +505,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
     marginTop: 10,
-  },
-  debugHint: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 5,
-    fontStyle: 'italic',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -710,26 +624,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFD700',
   },
-  debugSection: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    padding: 15,
-    backgroundColor: '#2d2d2d',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#444',
-  },
-  debugTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#FFA000',
-    marginBottom: 8,
-  },
-  debugText: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 4,
-  },
   bottomSpacer: {
     height: 20,
   },
@@ -784,17 +678,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
     fontStyle: 'italic',
-  },
-  continueShoppingButton: {
-    backgroundColor: '#333',
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 10,
-    alignItems: 'center',
-  },
-  continueShoppingText: {
-    color: '#FFD700',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

@@ -12,11 +12,11 @@ interface AddToCartButtonProps {
 
 export default function AddToCartButton({ menuItemId, name, price, imageUrl }: AddToCartButtonProps) {
   const { addToCart } = useCart();
-  const [adding, setAdding] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleAddToCart = async () => {
     try {
-      setAdding(true);
+      setLoading(true);
       await addToCart({
         menuItemId,
         name,
@@ -28,20 +28,20 @@ export default function AddToCartButton({ menuItemId, name, price, imageUrl }: A
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to add to cart');
     } finally {
-      setAdding(false);
+      setLoading(false);
     }
   };
 
   return (
     <TouchableOpacity 
-      style={styles.button} 
+      style={[styles.button, loading && styles.buttonDisabled]} 
       onPress={handleAddToCart}
-      disabled={adding}
+      disabled={loading}
     >
       <View style={styles.buttonContent}>
         <FontAwesome name="cart-plus" size={18} color="#1a1a1a" />
         <Text style={styles.buttonText}>
-          {adding ? 'Adding...' : 'Add to Cart'}
+          {loading ? 'Adding...' : 'Add to Cart'}
         </Text>
       </View>
     </TouchableOpacity>
@@ -55,6 +55,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     marginTop: 10,
+  },
+  buttonDisabled: {
+    backgroundColor: '#666',
   },
   buttonContent: {
     flexDirection: 'row',
