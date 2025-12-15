@@ -29,10 +29,19 @@ export default function CheckoutScreen() {
   const { user } = useAuth();
   const cartContext = useCart();
   
-  // Use 'items' from CartProvider (not 'cart')
-  const items = cartContext?.items || [];
-  const total = cartContext?.total || 0;
-  const clearCart = cartContext?.clearCart || (() => {});
+  // Debug: Log what cartContext contains
+  console.log('Cart Context:', cartContext);
+  console.log('Cart Context keys:', Object.keys(cartContext || {}));
+  
+  // Try different possible properties from CartProvider
+  const items = cartContext?.items || cartContext?.cartItems || cartContext?.cart?.items || [];
+  const total = cartContext?.total || cartContext?.cartTotal || cartContext?.cart?.total || 0;
+  const clearCart = cartContext?.clearCart || cartContext?.clear || (() => {
+    console.log('Clear cart function not found');
+  });
+  
+  console.log('Items found:', items);
+  console.log('Total found:', total);
   
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('cash');
   const [deliveryAddress, setDeliveryAddress] = useState('');
@@ -45,7 +54,6 @@ export default function CheckoutScreen() {
   // Load user address if available
   useEffect(() => {
     if (user) {
-      // You can fetch user profile here to pre-fill address
       setPhoneNumber(user.phoneNumber || '');
     }
   }, [user]);
@@ -57,6 +65,12 @@ export default function CheckoutScreen() {
 
   // Validate form
   const validateForm = () => {
+    console.log('Validating form...');
+    console.log('Delivery address:', deliveryAddress);
+    console.log('Phone number:', phoneNumber);
+    console.log('Items length:', items.length);
+    console.log('User:', user?.uid);
+    
     if (!deliveryAddress.trim()) {
       Alert.alert('Error', 'Please enter delivery address');
       return false;
@@ -78,87 +92,121 @@ export default function CheckoutScreen() {
   };
 
   const handlePlaceOrder = async () => {
-    if (isPlacingOrder || loading) return;
+    console.log('=== PLACE ORDER CLICKED ===');
+    console.log('Items to order:', items);
+    console.log('Total amount:', total);
     
-    if (!validateForm()) return;
+    if (isPlacingOrder || loading) {
+      console.log('Already processing order');
+      return;
+    }
+    
+    if (!validateForm()) {
+      console.log('Form validation failed');
+      return;
+    }
 
     setIsPlacingOrder(true);
     setLoading(true);
 
     try {
       // Prepare order items
-      const orderItems = items.map(item => ({
-        menuItemId: item.id || `item_${Date.now()}`,
-        name: item.name || 'Unknown Item',
-        quantity: item.quantity || 1,
-        price: item.price || 0,
-        specialInstructions: item.specialInstructions || '',
-        imageUrl: item.image || ''
-      }));
+      const orderItems = items.map((item: any, index: number) => {
+        console.log(`Item ${index}:`, item);
+        return {
+          menuItemId: item.id || item.menuItemId || `item_${Date.now()}_${index}`,
+          name: item.name || item.title || 'Unknown Item',
+          quantity: item.quantity || 1,
+          price: item.price || 0,
+          specialInstructions: item.specialInstructions || item.instructions || '',
+          imageUrl: item.image || item.imageUrl || ''
+        };
+      });
 
+      console.log('Prepared order items:', orderItems);
+      
       // Prepare order data
       const orderData = {
         userId: user!.uid,
+        userEmail: user!.email || '',
+        userName: user!.displayName || 'Customer',
         items: orderItems,
         totalAmount: orderTotal,
+        subtotal: total,
+        deliveryFee: deliveryFee,
+        tipAmount: tipValue,
         status: 'pending' as const,
         deliveryAddress,
         phoneNumber,
         specialInstructions,
         paymentMethod,
         paymentStatus: paymentMethod === 'cash' ? 'pending' : 'completed' as const,
-        notes: `Tip: ${tipAmount}% (R${tipValue.toFixed(2)})`
+        notes: `Tip: ${tipAmount}% (R${tipValue.toFixed(2)})`,
+        createdAt: new Date().toISOString()
       };
 
-      console.log('Placing order with data:', orderData);
+      console.log('Order data to save:', orderData);
       
       // Try to save to Firebase if available
-      let orderId = `order_${Date.now()}`;
+      let orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // First, try to clear cart before saving order (so user sees empty cart immediately)
+      console.log('Clearing cart...');
+      if (clearCart && typeof clearCart === 'function') {
+        clearCart();
+        console.log('Cart cleared successfully');
+      } else {
+        console.warn('Clear cart function not available or not a function');
+      }
+      
       if (createOrder) {
         try {
+          console.log('Attempting to save to Firebase...');
           const order = await createOrder(orderData);
           orderId = order.id;
           console.log('Order saved to Firebase:', orderId);
         } catch (firebaseError) {
-          console.warn('Failed to save to Firebase, using local storage:', firebaseError);
+          console.warn('Failed to save to Firebase:', firebaseError);
           // Save to local storage as fallback
           try {
             const orders = JSON.parse(localStorage.getItem('localOrders') || '[]');
-            orders.push({ id: orderId, ...orderData, createdAt: new Date().toISOString() });
+            orders.push({ id: orderId, ...orderData });
             localStorage.setItem('localOrders', JSON.stringify(orders));
+            console.log('Order saved locally:', orderId);
           } catch (e) {
-            console.warn('Local storage not available');
+            console.warn('Local storage not available:', e);
           }
         }
       } else {
         // Save to local storage
         try {
+          console.log('Saving to local storage...');
           const orders = JSON.parse(localStorage.getItem('localOrders') || '[]');
-          orders.push({ id: orderId, ...orderData, createdAt: new Date().toISOString() });
+          orders.push({ id: orderId, ...orderData });
           localStorage.setItem('localOrders', JSON.stringify(orders));
           console.log('Order saved locally:', orderId);
         } catch (e) {
-          console.warn('Local storage not available');
+          console.warn('Local storage not available:', e);
         }
       }
       
-      // Clear cart
-      clearCart();
-      
       // Show success message
+      console.log('Showing success alert...');
       Alert.alert(
         'Order Placed Successfully! 🎉',
-        `Order #${orderId} has been placed.\n\nTotal: R${orderTotal.toFixed(2)}\n\nYou will receive a confirmation shortly.`,
+        `Order #${orderId.substring(0, 8)} has been placed.\n\nTotal: R${orderTotal.toFixed(2)}\n\nYou will receive a confirmation shortly.`,
         [
           {
             text: 'Track Order',
             onPress: () => {
+              console.log('Navigating to order details:', orderId);
               router.push(`/order-details/${orderId}`);
             }
           },
           {
             text: 'Continue Shopping',
             onPress: () => {
+              console.log('Navigating back to home');
               router.replace('/(tabs)');
             },
             style: 'default'
@@ -200,29 +248,42 @@ export default function CheckoutScreen() {
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        style={styles.scrollView}
       >
         {/* Order Summary */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Order Items ({items.length})</Text>
-          {items.map((item, index) => (
-            <View key={index} style={styles.cartItem}>
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemDetails}>
-                  {item.quantity} × {formatCurrency(item.price)}
-                  {item.specialInstructions && ` (${item.specialInstructions})`}
+          <Text style={styles.sectionTitle}>
+            Order Items ({items.length})
+            {items.length === 0 && ' - Cart is empty'}
+          </Text>
+          
+          {items.length > 0 ? (
+            items.map((item: any, index: number) => (
+              <View key={item.id || index} style={styles.cartItem}>
+                <View style={styles.itemInfo}>
+                  <Text style={styles.itemName}>
+                    {item.name || item.title || `Item ${index + 1}`}
+                  </Text>
+                  <Text style={styles.itemDetails}>
+                    {item.quantity || 1} × {formatCurrency(item.price || 0)}
+                    {item.specialInstructions && ` (${item.specialInstructions})`}
+                  </Text>
+                  <Text style={styles.debugText}>
+                    ID: {item.id || 'no-id'} | Type: {typeof item}
+                  </Text>
+                </View>
+                <Text style={styles.itemTotal}>
+                  {formatCurrency((item.price || 0) * (item.quantity || 1))}
                 </Text>
               </View>
-              <Text style={styles.itemTotal}>
-                {formatCurrency(item.price * item.quantity)}
-              </Text>
-            </View>
-          ))}
-          
-          {items.length === 0 && (
+            ))
+          ) : (
             <View style={styles.emptyCart}>
               <FontAwesome name="shopping-cart" size={40} color="#666" />
               <Text style={styles.emptyCartText}>Your cart is empty</Text>
+              <Text style={styles.debugHint}>
+                Check console for cart context details
+              </Text>
             </View>
           )}
         </View>
@@ -350,12 +411,15 @@ export default function CheckoutScreen() {
           <View style={styles.summaryCard}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Subtotal</Text>
-              <Text style={styles.summaryValue}>{formatCurrency(total)}</Text>
+              <Text style={styles.summaryValue}>
+                {items.length > 0 ? formatCurrency(total) : 'R0.00'}
+                {items.length === 0 && ' (empty)'}
+              </Text>
             </View>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Delivery Fee</Text>
               <Text style={styles.summaryValue}>
-                {deliveryFee === 0 ? 'FREE' : formatCurrency(deliveryFee)}
+                {total > 200 ? 'FREE' : formatCurrency(25)}
               </Text>
             </View>
             <View style={styles.summaryRow}>
@@ -370,11 +434,20 @@ export default function CheckoutScreen() {
           </View>
         </View>
 
-        {/* Add extra space at bottom for button */}
-        <View style={styles.spacer} />
+        {/* Debug info */}
+        {__DEV__ && (
+          <View style={styles.debugSection}>
+            <Text style={styles.debugTitle}>Debug Info</Text>
+            <Text style={styles.debugText}>Items in cart: {items.length}</Text>
+            <Text style={styles.debugText}>Total: R{total}</Text>
+            <Text style={styles.debugText}>User: {user ? user.email : 'Not logged in'}</Text>
+          </View>
+        )}
+
+        <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Place Order Button - Fixed at bottom */}
+      {/* Place Order Button */}
       <View style={styles.footer}>
         <TouchableOpacity 
           style={[
@@ -384,6 +457,7 @@ export default function CheckoutScreen() {
           onPress={handlePlaceOrder}
           disabled={isPlacingOrder || loading || items.length === 0 || !user}
           activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           {isPlacingOrder || loading ? (
             <View style={styles.processingContainer}>
@@ -407,6 +481,15 @@ export default function CheckoutScreen() {
             Please login to place an order
           </Text>
         )}
+        
+        {items.length === 0 && (
+          <TouchableOpacity 
+            style={styles.continueShoppingButton}
+            onPress={() => router.push('/(tabs)/menu')}
+          >
+            <Text style={styles.continueShoppingText}>Continue Shopping</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -416,6 +499,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1a1a1a',
+  },
+  scrollView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -427,7 +513,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#2d2d2d',
     borderBottomWidth: 1,
     borderBottomColor: '#444',
-    zIndex: 10,
   },
   backButton: {
     padding: 5,
@@ -445,7 +530,7 @@ const styles = StyleSheet.create({
     width: 40,
   },
   scrollContent: {
-    paddingBottom: 120,
+    paddingBottom: 140,
   },
   section: {
     paddingHorizontal: 20,
@@ -500,6 +585,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
     marginTop: 10,
+  },
+  debugHint: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 5,
+    fontStyle: 'italic',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -619,8 +710,28 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFD700',
   },
-  spacer: {
-    height: 30,
+  debugSection: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    padding: 15,
+    backgroundColor: '#2d2d2d',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#444',
+  },
+  debugTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FFA000',
+    marginBottom: 8,
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 4,
+  },
+  bottomSpacer: {
+    height: 20,
   },
   footer: {
     position: 'absolute',
@@ -631,7 +742,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#2d2d2d',
     borderTopWidth: 1,
     borderTopColor: '#444',
-    zIndex: 10,
   },
   placeOrderButton: {
     flexDirection: 'row',
@@ -646,6 +756,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 3,
+    zIndex: 1000,
   },
   placeOrderButtonDisabled: {
     backgroundColor: '#666',
@@ -673,5 +784,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
     fontStyle: 'italic',
+  },
+  continueShoppingButton: {
+    backgroundColor: '#333',
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  continueShoppingText: {
+    color: '#FFD700',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
