@@ -1,32 +1,31 @@
 import React, { useState } from 'react';
-import { TouchableOpacity, Text, StyleSheet, Alert, View } from 'react-native';
+import { TouchableOpacity, Text, Alert, ActivityIndicator } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useCart } from '../contexts/CartProvider';
 
-interface AddToCartButtonProps {
-  menuItemId: string;
-  name: string;
-  price: number;
-  imageUrl: string;
-}
-
-export default function AddToCartButton({ menuItemId, name, price, imageUrl }: AddToCartButtonProps) {
+export default function AddToCartButton({ item }: any) {
   const { addToCart } = useCart();
   const [loading, setLoading] = useState(false);
 
-  const handleAddToCart = async () => {
+  const handleAdd = async () => {
+    if (!item || !item.id || !item.name || !item.price) {
+      Alert.alert('Error', 'Invalid item data');
+      return;
+    }
+    
+    setLoading(true);
     try {
-      setLoading(true);
       await addToCart({
-        menuItemId,
-        name,
-        price,
+        menuItemId: item.id,
+        name: item.name,
+        price: Number(item.price) || 0,
         quantity: 1,
-        imageUrl,
+        imageUrl: item.imageUrl
       });
-      Alert.alert('Success', `${name} added to cart!`);
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to add to cart');
+      Alert.alert('Added', `${item.name} added to cart`);
+    } catch (error) {
+      console.error('Add to cart error:', error);
+      Alert.alert('Error', 'Failed to add to cart');
     } finally {
       setLoading(false);
     }
@@ -34,40 +33,39 @@ export default function AddToCartButton({ menuItemId, name, price, imageUrl }: A
 
   return (
     <TouchableOpacity 
-      style={[styles.button, loading && styles.buttonDisabled]} 
-      onPress={handleAddToCart}
+      style={[styles.button, loading && styles.buttonDisabled]}
+      onPress={handleAdd}
       disabled={loading}
     >
-      <View style={styles.buttonContent}>
-        <FontAwesome name="cart-plus" size={18} color="#1a1a1a" />
-        <Text style={styles.buttonText}>
-          {loading ? 'Adding...' : 'Add to Cart'}
-        </Text>
-      </View>
+      {loading ? (
+        <ActivityIndicator color="#1a1a1a" size="small" />
+      ) : (
+        <>
+          <FontAwesome name="cart-plus" size={18} color="#000" />
+          <Text style={styles.text}>Add to Cart</Text>
+        </>
+      )}
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    backgroundColor: '#FFD700',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+const styles = {
+  button: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    backgroundColor: '#FFD700', 
+    paddingHorizontal: 16, 
+    paddingVertical: 10, 
     borderRadius: 8,
-    marginTop: 10,
+    gap: 8 
   },
   buttonDisabled: {
     backgroundColor: '#666',
   },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  buttonText: {
-    color: '#1a1a1a',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-});
+  text: { 
+    color: '#000', 
+    fontSize: 14, 
+    fontWeight: 'bold' 
+  }
+};

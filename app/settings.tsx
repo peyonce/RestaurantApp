@@ -1,10 +1,42 @@
-import React, { useState } from 'react';
-import { 
-  View, Text, ScrollView, StyleSheet, TouchableOpacity, 
-  Switch, Alert, Linking 
-} from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+ import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import React, { Dispatch, SetStateAction, useState } from 'react';
+import {
+  Alert, Linking,
+  ScrollView, StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
+
+// Define types for settings items
+type SettingItem = 
+  | { 
+      icon: string; 
+      label: string; 
+      type: 'switch'; 
+      value: boolean; 
+      action: Dispatch<SetStateAction<boolean>>;
+    }
+  | { 
+      icon: string; 
+      label: string; 
+      type: 'select'; 
+      value: string; 
+      action: () => void;
+    }
+  | { 
+      icon: string; 
+      label: string; 
+      type: 'nav'; 
+      action: () => void;
+    };
+
+interface SettingsCategory {
+  title: string;
+  items: SettingItem[];
+}
 
 export default function SettingsScreen() {
   const [darkMode, setDarkMode] = useState(true);
@@ -12,7 +44,7 @@ export default function SettingsScreen() {
   const [dataSaver, setDataSaver] = useState(false);
   const [language, setLanguage] = useState('English');
 
-  const settingsCategories = [
+  const settingsCategories: SettingsCategory[] = [
     {
       title: 'App Settings',
       items: [
@@ -27,7 +59,7 @@ export default function SettingsScreen() {
       items: [
         { icon: 'volume-up', label: 'Sound & Haptics', type: 'nav', action: () => Alert.alert('Sound', 'Sound settings') },
         { icon: 'picture-o', label: 'Appearance', type: 'nav', action: () => Alert.alert('Appearance', 'Appearance settings') },
-        { icon: 'shield', label: 'Privacy Settings', type: 'nav', action: () => router.push('/privacy') },
+        { icon: 'shield', label: 'Privacy Settings', type: 'nav', action: () => router.push('/settings') }, // Fixed path
       ]
     },
     {
@@ -50,16 +82,54 @@ export default function SettingsScreen() {
 
   const handleClearCache = () => {
     Alert.alert('Clear Cache', 'Are you sure?', [
-      { text: 'Cancel' },
+      { text: 'Cancel', style: 'cancel' },
       { text: 'Clear', onPress: () => Alert.alert('Success', 'Cache cleared') }
     ]);
   };
 
   const handleLogoutAll = () => {
     Alert.alert('Logout All Devices', 'Logout from all devices?', [
-      { text: 'Cancel' },
+      { text: 'Cancel', style: 'cancel' },
       { text: 'Logout', onPress: () => Alert.alert('Success', 'Logged out from all devices') }
     ]);
+  };
+
+  const renderSettingItem = (item: SettingItem, index: number) => {
+    const handlePress = () => {
+      if (item.type === 'nav') {
+        item.action();
+      }
+    };
+
+    return (
+      <TouchableOpacity
+        key={index}
+        style={styles.settingItem}
+        onPress={handlePress}
+        disabled={item.type === 'switch' || item.type === 'select'}
+      >
+        <View style={styles.settingLeft}>
+          <FontAwesome name={item.icon as any} size={20} color="#FFD700" />
+          <Text style={styles.settingLabel}>{item.label}</Text>
+        </View>
+        
+        {item.type === 'switch' ? (
+          <Switch
+            value={item.value}
+            onValueChange={item.action}
+            trackColor={{ false: '#767577', true: '#81b0ff' }}
+            thumbColor={item.value ? '#FFD700' : '#f4f3f4'}
+          />
+        ) : item.type === 'select' ? (
+          <View style={styles.selectContainer}>
+            <Text style={styles.selectText}>{item.value}</Text>
+            <FontAwesome name="chevron-right" size={14} color="#999" />
+          </View>
+        ) : (
+          <FontAwesome name="chevron-right" size={16} color="#999" />
+        )}
+      </TouchableOpacity>
+    );
   };
 
   return (
@@ -77,35 +147,7 @@ export default function SettingsScreen() {
           <View key={categoryIndex} style={styles.category}>
             <Text style={styles.categoryTitle}>{category.title}</Text>
             <View style={styles.categoryContent}>
-              {category.items.map((item, itemIndex) => (
-                <TouchableOpacity
-                  key={itemIndex}
-                  style={styles.settingItem}
-                  onPress={() => item.type === 'nav' && item.action()}
-                  disabled={item.type === 'switch'}
-                >
-                  <View style={styles.settingLeft}>
-                    <FontAwesome name={item.icon as any} size={20} color="#FFD700" />
-                    <Text style={styles.settingLabel}>{item.label}</Text>
-                  </View>
-                  
-                  {item.type === 'switch' ? (
-                    <Switch
-                      value={item.value}
-                      onValueChange={item.action}
-                      trackColor={{ false: '#767577', true: '#81b0ff' }}
-                      thumbColor={item.value ? '#FFD700' : '#f4f3f4'}
-                    />
-                  ) : item.type === 'select' ? (
-                    <View style={styles.selectContainer}>
-                      <Text style={styles.selectText}>{item.value}</Text>
-                      <FontAwesome name="chevron-right" size={14} color="#999" />
-                    </View>
-                  ) : (
-                    <FontAwesome name="chevron-right" size={16} color="#999" />
-                  )}
-                </TouchableOpacity>
-              ))}
+              {category.items.map((item, itemIndex) => renderSettingItem(item, itemIndex))}
             </View>
           </View>
         ))}

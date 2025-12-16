@@ -1,7 +1,8 @@
+ // app/(tabs)/_layout.tsx
 import { FontAwesome } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 
-function TabLayout() {
+export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
@@ -22,10 +23,10 @@ function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="orders"
+        name="menu"
         options={{
-          title: 'Orders',
-          tabBarIcon: ({ color }) => <FontAwesome name="list-alt" size={24} color={color} />,
+          title: 'Menu',
+          tabBarIcon: ({ color }) => <FontAwesome name="cutlery" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -33,6 +34,14 @@ function TabLayout() {
         options={{
           title: 'Cart',
           tabBarIcon: ({ color }) => <FontAwesome name="shopping-cart" size={24} color={color} />,
+          tabBarBadge: 3, // Optional: show cart item count
+        }}
+      />
+      <Tabs.Screen
+        name="orders"
+        options={{
+          title: 'Orders',
+          tabBarIcon: ({ color }) => <FontAwesome name="list-alt" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -45,5 +54,3 @@ function TabLayout() {
     </Tabs>
   );
 }
-
-export default TabLayout;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, Alert } from 'react-native';
-import { useCart } from '../contexts/CartProvider';
+import { useCart } from '@/app/contexts/CartProvider';
 
 interface WorkingAddButtonProps {
   item: {

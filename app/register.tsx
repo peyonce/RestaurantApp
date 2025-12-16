@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useAuth } from './contexts/AuthProvider';
 
 export default function RegisterScreen() {
@@ -40,7 +40,7 @@ export default function RegisterScreen() {
   useEffect(() => {
     if (user) {
       console.log('DEBUG - User detected, redirecting...');
-      router.replace('/(tabs)');
+      router.replace('/');
     }
   }, [user]);
 
@@ -86,7 +86,7 @@ export default function RegisterScreen() {
       
       // Automatically redirect after 2 seconds
       setTimeout(() => {
-        router.replace('/(tabs)');
+        router.replace('/');
       }, 2000);
     } else {
       Alert.alert('Signup Failed', result.message || 'Failed to create account');

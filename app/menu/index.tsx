@@ -1,25 +1,40 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, Alert } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+ import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useCart } from '../contexts/CartProvider';
 
-// Add to Cart Button
-const AddToCartButton = ({ item }) => {
+// Define MenuItem type
+interface MenuItem {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  image: string;
+  category: string;
+}
+
+// Define AddToCartButton props
+interface AddToCartButtonProps {
+  item: MenuItem;
+}
+
+// Add to Cart Button Component
+const AddToCartButton: React.FC<AddToCartButtonProps> = ({ item }) => {
   const { addToCart } = useCart();
   const [added, setAdded] = useState(false);
 
   const handlePress = () => {
     const cartItem = {
-      id: item.id,
+      menuItemId: item.id,  // Changed from 'id' to 'menuItemId'
       name: item.name,
       price: item.price,
-      image: item.image
+      quantity: 1,  // Added quantity
+      imageUrl: item.image  // Changed from 'image' to 'imageUrl'
     };
     
     addToCart(cartItem);
     setAdded(true);
-    Alert.alert('✅ Added!', `${item.name} added to cart`);
     
     setTimeout(() => {
       setAdded(false);
@@ -47,7 +62,7 @@ export default function MenuScreen() {
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   // All menu items
-  const allItems = [
+  const allItems: MenuItem[] = [
     { id: '1', name: 'Truffle Burger', price: 28.99, description: 'Premium beef burger', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400', category: 'burgers' },
     { id: '2', name: 'Cheeseburger', price: 22.99, description: 'Aged cheddar cheese burger', image: 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?w=400', category: 'burgers' },
     { id: '3', name: 'BBQ Bacon Burger', price: 24.99, description: 'Beef burger with bacon', image: 'https://placehold.co/400x300/8B4513/FFFFFF?text=BBQ+Burger', category: 'burgers' },
@@ -60,8 +75,15 @@ export default function MenuScreen() {
     { id: '10', name: 'New York Cheesecake', price: 13.99, description: 'Creamy cheesecake dessert', image: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=400', category: 'desserts' },
   ];
 
+  // Category type definition
+  interface Category {
+    id: string;
+    name: string;
+    items: MenuItem[];
+  }
+
   // BETTER SEARCH FUNCTION
-  const getFilteredItems = () => {
+  const getFilteredItems = (): MenuItem[] => {
     let filtered = [...allItems];
     
     // 1. Filter by category
@@ -81,7 +103,7 @@ export default function MenuScreen() {
         if (item.description.toLowerCase().includes(query)) return true;
         
         // Search in category name
-        const categoryNames = {
+        const categoryNames: Record<string, string> = {
           'burgers': 'burger',
           'drinks': 'drink',
           'meat': 'meat',
@@ -91,7 +113,7 @@ export default function MenuScreen() {
         if (categoryKeyword && categoryKeyword.includes(query)) return true;
         
         // Search for synonyms
-        const synonyms = {
+        const synonyms: Record<string, string[]> = {
           'drink': ['drinks', 'beverage', 'beverages', 'cocktail', 'beer', 'lemonade'],
           'burger': ['burgers', 'cheeseburger'],
           'cake': ['cakes', 'dessert', 'desserts'],
@@ -116,11 +138,11 @@ export default function MenuScreen() {
   };
 
   // Group filtered items by category
-  const getGroupedItems = () => {
+  const getGroupedItems = (): Category[] => {
     const filtered = getFilteredItems();
     
     // Group by category
-    const grouped = {};
+    const grouped: Record<string, Category> = {};
     filtered.forEach(item => {
       if (!grouped[item.category]) {
         grouped[item.category] = {
@@ -136,8 +158,8 @@ export default function MenuScreen() {
   };
 
   // Helper to get category display name
-  const getCategoryName = (categoryId) => {
-    const names = {
+  const getCategoryName = (categoryId: string): string => {
+    const names: Record<string, string> = {
       'burgers': 'Burgers',
       'drinks': 'Drinks',
       'meat': 'Meat',
@@ -206,7 +228,7 @@ export default function MenuScreen() {
       )}
 
       {/* Category Tabs */}
-      <ScrollView horizontal style={styles.tabContainer}>
+      <ScrollView horizontal style={styles.tabContainer} showsHorizontalScrollIndicator={false}>
         {categories.map((cat) => (
           <TouchableOpacity
             key={cat.id}
@@ -264,8 +286,11 @@ export default function MenuScreen() {
   );
 }
 
-const styles = {
-  container: { flex: 1, backgroundColor: '#1a1a1a' },
+const styles = StyleSheet.create({
+  container: { 
+    flex: 1, 
+    backgroundColor: '#1a1a1a' 
+  },
   header: { 
     paddingTop: 50, 
     padding: 20, 
@@ -274,7 +299,11 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center'
   },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#FFFFFF' },
+  title: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    color: '#FFFFFF' 
+  },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -422,6 +451,6 @@ const styles = {
   addButtonText: {
     color: '#000000',
     fontSize: 16,
-    fontWeight: 'bold'
+    fontWeight: 'bold' as const,
   }
-};
+});
