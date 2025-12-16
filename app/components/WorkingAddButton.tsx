@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, Alert } from 'react-native';
+import { TouchableOpacity, Text, Alert, StyleSheet } from 'react-native';
 import { useCart } from '@/app/contexts/CartProvider';
 
 interface WorkingAddButtonProps {
@@ -18,7 +18,18 @@ const WorkingAddButton: React.FC<WorkingAddButtonProps> = ({ item }) => {
     console.log('WorkingAddButton: Adding item to cart:', item.name);
     
     try {
-      addToCart(item);
+      // Create a proper CartItem object (without id since addToCart expects Omit<CartItem, "id">)
+      const cartItem = {
+        menuItemId: item.id, // Use item.id as menuItemId
+        name: item.name,
+        price: item.price,
+        quantity: 1, // Default quantity
+        image: item.image || '',
+        imageUrl: item.image || '',
+        specialInstructions: ''
+      };
+      
+      addToCart(cartItem); // This is line 28, not 21
       Alert.alert(
         'Success!',
         `${item.name} added to cart\nTotal items: ${itemCount + 1}`,
@@ -33,24 +44,27 @@ const WorkingAddButton: React.FC<WorkingAddButtonProps> = ({ item }) => {
   return (
     <TouchableOpacity
       onPress={handlePress}
-      style={{
-        backgroundColor: '#FFD700',
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 8,
-        marginTop: 10,
-        alignItems: 'center',
-      }}
+      style={styles.button}
     >
-      <Text style={{ 
-        color: '#000000', 
-        fontSize: 16, 
-        fontWeight: 'bold' 
-      }}>
-        Add to Cart
-      </Text>
+      <Text style={styles.text}>Add to Cart</Text>
     </TouchableOpacity>
   );
 };
+
+const styles = StyleSheet.create({
+  button: {
+    backgroundColor: '#FFD700',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  text: {
+    color: '#1a1a1a',
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+});
 
 export default WorkingAddButton;

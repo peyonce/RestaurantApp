@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TouchableOpacity, Text, Alert, ActivityIndicator } from 'react-native';
+import { TouchableOpacity, Text, Alert, ActivityIndicator, StyleSheet } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useCart } from '../contexts/CartProvider';
 
@@ -49,7 +49,7 @@ export default function AddToCartButton({ item }: any) {
   );
 }
 
-const styles = {
+const styles = StyleSheet.create({
   button: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -66,6 +66,6 @@ const styles = {
   text: { 
     color: '#000', 
     fontSize: 14, 
-    fontWeight: 'bold' 
+    fontWeight: '600' as const // Changed from 'bold' to '600'
   }
-};
+});
