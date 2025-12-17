@@ -19,378 +19,382 @@ export default function BookingsScreen() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
-  
-  // Booking form state
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
-  const [guests, setGuests] = useState('2');
-  const [specialRequests, setSpecialRequests] = useState('');
-  const [restaurantName, setRestaurantName] = useState('');
-  
-  // Bookings data
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [newBooking, setNewBooking] = useState({
+    date: '',
+    time: '',
+    guests: '2',
+    specialRequests: ''
+  });
 
+  // Fetch user bookings on mount
   useEffect(() => {
-    loadBookings();
+    if (user) {
+      fetchBookings();
+    }
   }, [user]);
 
-  const loadBookings = async () => {
-    if (!user) return;
-    
+  const fetchBookings = async () => {
     setLoading(true);
     try {
-      const userBookings = await getUserBookings(user.uid);
+      const userBookings = await getUserBookings(user!.uid);
       setBookings(userBookings);
     } catch (error) {
-      console.error('Error loading bookings:', error);
-      Alert.alert('Error', 'Failed to load bookings');
+      Alert.alert('Error', 'Failed to load your Mzansi Meals bookings');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCreateBooking = async () => {
-    if (!user) {
-      Alert.alert('Error', 'Please login to book');
+    if (!newBooking.date || !newBooking.time) {
+      Alert.alert('Missing Information', 'Please select date and time for your Mzansi Meals booking');
       return;
     }
-    
-    if (!date || !time || !guests || !restaurantName) {
-      Alert.alert('Error', 'Please fill all required fields');
-      return;
-    }
-    
+
     setCreating(true);
     try {
-      const bookingData = {
-        userId: user.uid,
-        restaurantId: 'temp-restaurant-id', // In real app, get from restaurant selection
-        restaurantName,
-        date,
-        time,
-        guests: parseInt(guests),
-        specialRequests,
-      };
+      await createBooking({
+        userId: user!.uid,
+        userName: user!.displayName || 'Mzansi Customer',
+        userEmail: user!.email || '',
+        date: newBooking.date,
+        time: newBooking.time,
+        guests: parseInt(newBooking.guests),
+        specialRequests: newBooking.specialRequests,
+        status: 'confirmed'
+      });
       
-      await createBooking(bookingData);
-      Alert.alert('Success', 'Booking created successfully!');
+      Alert.alert(
+        'Booking Confirmed! 🎉',
+        `Your table at Mzansi Meals is booked for ${newBooking.date} at ${newBooking.time} for ${newBooking.guests} guests`
+      );
+      
       setShowBookingModal(false);
-      loadBookings(); // Refresh list
-      
-      // Clear form
-      setDate('');
-      setTime('');
-      setGuests('2');
-      setSpecialRequests('');
-      setRestaurantName('');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create booking');
+      setNewBooking({ date: '', time: '', guests: '2', specialRequests: '' });
+      fetchBookings();
+    } catch (error: any) {
+      Alert.alert('Booking Failed', error.message || 'Could not create booking');
     } finally {
       setCreating(false);
     }
   };
 
   const handleCancelBooking = async (bookingId: string) => {
-    Alert.alert('Cancel Booking', 'Are you sure?', [
-      { text: 'No' },
-      { 
-        text: 'Yes', 
-        onPress: async () => {
-          try {
-            await cancelBooking(bookingId);
-            Alert.alert('Success', 'Booking cancelled');
-            loadBookings(); // Refresh list
-          } catch (error) {
-            Alert.alert('Error', 'Failed to cancel booking');
+    Alert.alert(
+      'Cancel Booking',
+      'Are you sure you want to cancel this Mzansi Meals booking?',
+      [
+        { text: 'Keep Booking', style: 'cancel' },
+        {
+          text: 'Cancel Booking',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await cancelBooking(bookingId);
+              Alert.alert('Booking Cancelled', 'Your Mzansi Meals booking has been cancelled');
+              fetchBookings();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to cancel booking');
+            }
           }
         }
-      }
-    ]);
+      ]
+    );
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-ZA', { 
+      weekday: 'short', 
+      day: 'numeric', 
+      month: 'short' 
+    });
   };
 
   const getStatusColor = (status: string) => {
-    switch(status) {
+    switch (status.toLowerCase()) {
       case 'confirmed': return '#4CAF50';
-      case 'pending': return '#FF9800';
-      case 'completed': return '#2196F3';
+      case 'pending': return '#FFA000';
       case 'cancelled': return '#F44336';
+      case 'completed': return '#2196F3';
       default: return '#999';
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch(status) {
-      case 'confirmed': return 'Confirmed';
-      case 'pending': return 'Pending';
-      case 'completed': return 'Completed';
-      case 'cancelled': return 'Cancelled';
-      default: return status;
+  const getStatusIcon = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'confirmed': return 'check-circle';
+      case 'pending': return 'clock-o';
+      case 'cancelled': return 'times-circle';
+      case 'completed': return 'flag-checkered';
+      default: return 'question-circle';
     }
   };
 
   const upcomingBookings = bookings.filter(b => 
-    b.status === 'pending' || b.status === 'confirmed'
-  );
-  
-  const pastBookings = bookings.filter(b => 
-    b.status === 'completed' || b.status === 'cancelled'
-  );
+    new Date(b.date) >= new Date() && b.status !== 'cancelled'
+  ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color="#FFD700" />
-        <Text style={styles.loadingText}>Loading bookings...</Text>
-      </View>
-    );
-  }
+  const pastBookings = bookings.filter(b => 
+    new Date(b.date) < new Date() || b.status === 'cancelled'
+  ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>My Bookings</Text>
-        <TouchableOpacity 
-          style={styles.newBookingButton}
-          onPress={() => setShowBookingModal(true)}
-        >
-          <FontAwesome name="plus" size={16} color="#FFFFFF" />
-          <Text style={styles.newBookingText}>New Booking</Text>
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Mzansi Meals Bookings</Text>
+        <Text style={styles.headerSubtitle}>Reserve your table for a South African feast</Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Quick Actions */}
-        <View style={styles.quickActions}>
-          <TouchableOpacity style={styles.quickAction} onPress={() => setShowBookingModal(true)}>
-            <FontAwesome name="calendar-plus-o" size={24} color="#FFD700" />
-            <Text style={styles.quickActionText}>Book Now</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickAction} onPress={() => setShowHistoryModal(true)}>
-            <FontAwesome name="history" size={24} color="#FFD700" />
-            <Text style={styles.quickActionText}>History</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickAction} onPress={() => router.push('/(tabs)/home')}>
-            <FontAwesome name="search" size={24} color="#FFD700" />
-            <Text style={styles.quickActionText}>Find</Text>
-          </TouchableOpacity>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#FFD700" />
+          <Text style={styles.loadingText}>Loading your Mzansi bookings...</Text>
         </View>
-
-        {/* Upcoming Bookings */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Upcoming</Text>
-            <Text style={styles.sectionCount}>{upcomingBookings.length}</Text>
+      ) : (
+        <ScrollView 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Quick Stats */}
+          <View style={styles.statsCard}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{upcomingBookings.length}</Text>
+              <Text style={styles.statLabel}>Upcoming</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{pastBookings.length}</Text>
+              <Text style={styles.statLabel}>Past</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>
+                {bookings.filter(b => b.status === 'confirmed').length}
+              </Text>
+              <Text style={styles.statLabel}>Confirmed</Text>
+            </View>
           </View>
-          
+
+          {/* New Booking Button */}
+          <TouchableOpacity 
+            style={styles.newBookingButton}
+            onPress={() => setShowBookingModal(true)}
+          >
+            <FontAwesome name="calendar-plus" size={24} color="#1a1a1a" />
+            <Text style={styles.newBookingText}>Book a Table at Mzansi Meals</Text>
+          </TouchableOpacity>
+
+          {/* Upcoming Bookings */}
           {upcomingBookings.length > 0 ? (
-            upcomingBookings.map((booking) => (
-              <View key={booking.id} style={styles.bookingCard}>
-                <View style={styles.bookingHeader}>
-                  <Text style={styles.restaurantName}>{booking.restaurantName}</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(booking.status) + '20' }]}>
-                    <Text style={[styles.statusText, { color: getStatusColor(booking.status) }]}>
-                      {getStatusText(booking.status)}
+            <>
+              <Text style={styles.sectionTitle}>Upcoming Bookings</Text>
+              {upcomingBookings.map((booking) => (
+                <View key={booking.id} style={styles.bookingCard}>
+                  <View style={styles.bookingHeader}>
+                    <View>
+                      <Text style={styles.bookingDate}>{formatDate(booking.date)}</Text>
+                      <Text style={styles.bookingTime}>⏰ {booking.time} • 👥 {booking.guests} guests</Text>
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(booking.status) + '20' }]}>
+                      <FontAwesome 
+                        name={getStatusIcon(booking.status)} 
+                        size={14} 
+                        color={getStatusColor(booking.status)} 
+                        style={styles.statusIcon}
+                      />
+                      <Text style={[styles.statusText, { color: getStatusColor(booking.status) }]}>
+                        {booking.status}
+                      </Text>
+                    </View>
+                  </View>
+                  
+                  {booking.specialRequests && (
+                    <Text style={styles.specialRequests}>
+                      <Text style={styles.specialRequestsLabel}>Special requests: </Text>
+                      {booking.specialRequests}
                     </Text>
+                  )}
+                  
+                  <View style={styles.bookingActions}>
+                    <TouchableOpacity 
+                      style={styles.actionButton}
+                      onPress={() => router.push(`/booking-details/${booking.id}`)}
+                    >
+                      <FontAwesome name="info-circle" size={16} color="#FFD700" />
+                      <Text style={styles.actionText}>Details</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      style={[styles.actionButton, styles.cancelButton]}
+                      onPress={() => handleCancelBooking(booking.id!)}
+                    >
+                      <FontAwesome name="times" size={16} color="#FF6B6B" />
+                      <Text style={[styles.actionText, styles.cancelText]}>Cancel</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
-                
-                <View style={styles.bookingDetails}>
-                  <View style={styles.detailItem}>
-                    <FontAwesome name="calendar" size={14} color="#999" />
-                    <Text style={styles.detailText}>{booking.date}</Text>
-                  </View>
-                  <View style={styles.detailItem}>
-                    <FontAwesome name="clock-o" size={14} color="#999" />
-                    <Text style={styles.detailText}>{booking.time}</Text>
-                  </View>
-                  <View style={styles.detailItem}>
-                    <FontAwesome name="users" size={14} color="#999" />
-                    <Text style={styles.detailText}>{booking.guests} guests</Text>
-                  </View>
-                </View>
-                
-                {booking.specialRequests && (
-                  <View style={styles.requestsContainer}>
-                    <Text style={styles.requestsLabel}>Special Requests:</Text>
-                    <Text style={styles.requestsText}>{booking.specialRequests}</Text>
-                  </View>
-                )}
-                
-                <View style={styles.bookingActions}>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <Text style={styles.actionButtonText}>Modify</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.actionButton, styles.cancelButton]}
-                    onPress={() => booking.id && handleCancelBooking(booking.id)}
-                  >
-                    <Text style={[styles.actionButtonText, styles.cancelButtonText]}>Cancel</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
+              ))}
+            </>
           ) : (
-            <View style={styles.emptyState}>
-              <FontAwesome name="calendar-times-o" size={50} color="#666" />
-              <Text style={styles.emptyStateText}>No upcoming bookings</Text>
-              <Text style={styles.emptyStateSubtext}>Tap "New Booking" to make a reservation</Text>
+            <View style={styles.emptySection}>
+              <FontAwesome name="calendar" size={60} color="#666" />
+              <Text style={styles.emptyTitle}>No upcoming bookings</Text>
+              <Text style={styles.emptyText}>
+                Book a table at Mzansi Meals for an authentic South African dining experience
+              </Text>
             </View>
           )}
-        </View>
 
-        {/* Past Bookings Preview */}
-        {pastBookings.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Recent History</Text>
-              <TouchableOpacity onPress={() => setShowHistoryModal(true)}>
-                <Text style={styles.seeAllText}>See All</Text>
-              </TouchableOpacity>
-            </View>
-            
-            {pastBookings.slice(0, 2).map((booking) => (
-              <View key={booking.id} style={styles.historyCard}>
-                <View style={styles.historyLeft}>
-                  <FontAwesome 
-                    name={booking.status === 'completed' ? "check-circle" : "times-circle"} 
-                    size={20} 
-                    color={booking.status === 'completed' ? "#4CAF50" : "#F44336"} 
-                  />
-                  <View style={styles.historyDetails}>
-                    <Text style={styles.historyRestaurant}>{booking.restaurantName}</Text>
-                    <Text style={styles.historyDate}>{booking.date} • {booking.guests} guests</Text>
+          {/* Past Bookings */}
+          {pastBookings.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>Past Bookings</Text>
+              {pastBookings.map((booking) => (
+                <View key={booking.id} style={[styles.bookingCard, styles.pastBookingCard]}>
+                  <View style={styles.bookingHeader}>
+                    <View>
+                      <Text style={styles.bookingDate}>{formatDate(booking.date)}</Text>
+                      <Text style={styles.bookingTime}>⏰ {booking.time} • 👥 {booking.guests} guests</Text>
+                    </View>
+                    <Text style={[styles.statusText, { color: getStatusColor(booking.status) }]}>
+                      {booking.status}
+                    </Text>
                   </View>
+                  
+                  <TouchableOpacity 
+                    style={styles.rebookButton}
+                    onPress={() => {
+                      setNewBooking({
+                        date: booking.date,
+                        time: booking.time,
+                        guests: booking.guests.toString(),
+                        specialRequests: booking.specialRequests || ''
+                      });
+                      setShowBookingModal(true);
+                    }}
+                  >
+                    <FontAwesome name="repeat" size={16} color="#FFD700" />
+                    <Text style={styles.rebookText}>Re-book This</Text>
+                  </TouchableOpacity>
                 </View>
-                <FontAwesome name="chevron-right" size={16} color="#999" />
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
+              ))}
+            </>
+          )}
 
-      {/* Create Booking Modal */}
-      <Modal visible={showBookingModal} animationType="slide" transparent>
+          <View style={styles.bottomSpacer} />
+        </ScrollView>
+      )}
+
+      {/* Booking Modal */}
+      <Modal
+        visible={showBookingModal}
+        animationType="slide"
+        transparent={true}
+      >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>New Booking</Text>
+              <Text style={styles.modalTitle}>Book Table at Mzansi Meals</Text>
               <TouchableOpacity onPress={() => setShowBookingModal(false)}>
-                <FontAwesome name="times" size={22} color="#999" />
+                <FontAwesome name="times" size={24} color="#999" />
               </TouchableOpacity>
             </View>
             
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-              <Text style={styles.inputLabel}>Restaurant Name *</Text>
-              <TextInput
-                style={styles.input}
-                value={restaurantName}
-                onChangeText={setRestaurantName}
-                placeholder="Enter restaurant name"
-                placeholderTextColor="#666"
-              />
+            <ScrollView style={styles.modalBody}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Date</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newBooking.date}
+                  onChangeText={(text) => setNewBooking({...newBooking, date: text})}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor="#666"
+                />
+                <Text style={styles.inputHint}>e.g., 2024-12-25</Text>
+              </View>
               
-              <Text style={styles.inputLabel}>Date *</Text>
-              <TextInput
-                style={styles.input}
-                value={date}
-                onChangeText={setDate}
-                placeholder="DD/MM/YYYY"
-                placeholderTextColor="#666"
-              />
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Time</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newBooking.time}
+                  onChangeText={(text) => setNewBooking({...newBooking, time: text})}
+                  placeholder="HH:MM"
+                  placeholderTextColor="#666"
+                />
+                <Text style={styles.inputHint}>e.g., 19:30</Text>
+              </View>
               
-              <Text style={styles.inputLabel}>Time *</Text>
-              <TextInput
-                style={styles.input}
-                value={time}
-                onChangeText={setTime}
-                placeholder="HH:MM (24-hour format)"
-                placeholderTextColor="#666"
-              />
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Number of Guests</Text>
+                <View style={styles.guestsSelector}>
+                  {[1, 2, 3, 4, 5, 6].map((num) => (
+                    <TouchableOpacity
+                      key={num}
+                      style={[
+                        styles.guestButton,
+                        newBooking.guests === num.toString() && styles.guestButtonSelected
+                      ]}
+                      onPress={() => setNewBooking({...newBooking, guests: num.toString()})}
+                    >
+                      <Text style={[
+                        styles.guestButtonText,
+                        newBooking.guests === num.toString() && styles.guestButtonTextSelected
+                      ]}>
+                        {num}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
               
-              <Text style={styles.inputLabel}>Number of Guests *</Text>
-              <TextInput
-                style={styles.input}
-                value={guests}
-                onChangeText={setGuests}
-                placeholder="2"
-                keyboardType="numeric"
-                placeholderTextColor="#666"
-              />
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Special Requests (Optional)</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={newBooking.specialRequests}
+                  onChangeText={(text) => setNewBooking({...newBooking, specialRequests: text})}
+                  placeholder="Birthday celebration, allergies, seating preference..."
+                  placeholderTextColor="#666"
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
               
-              <Text style={styles.inputLabel}>Special Requests</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                value={specialRequests}
-                onChangeText={setSpecialRequests}
-                placeholder="Any special requirements?"
-                placeholderTextColor="#666"
-                multiline
-                numberOfLines={3}
-              />
+              <View style={styles.bookingInfo}>
+                <FontAwesome name="info-circle" size={20} color="#FFD700" />
+                <Text style={styles.bookingInfoText}>
+                  Mzansi Meals operating hours: Mon-Fri 10:00-22:00, Sat 10:00-23:00, Sun 10:00-20:00
+                </Text>
+              </View>
+            </ScrollView>
+            
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => setShowBookingModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
               
               <TouchableOpacity 
-                style={[styles.bookButton, creating && styles.bookButtonDisabled]} 
+                style={styles.confirmButton}
                 onPress={handleCreateBooking}
                 disabled={creating}
               >
                 {creating ? (
-                  <ActivityIndicator size="small" color="#000000" />
+                  <ActivityIndicator color="#1a1a1a" size="small" />
                 ) : (
-                  <Text style={styles.bookButtonText}>Book Now</Text>
+                  <>
+                    <FontAwesome name="calendar-check" size={18} color="#1a1a1a" />
+                    <Text style={styles.confirmButtonText}>Confirm Booking</Text>
+                  </>
                 )}
               </TouchableOpacity>
-              
-              <Text style={styles.modalNote}>
-                * Required fields. You'll receive a confirmation within 24 hours.
-              </Text>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Booking History Modal */}
-      <Modal visible={showHistoryModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Booking History</Text>
-              <TouchableOpacity onPress={() => setShowHistoryModal(false)}>
-                <FontAwesome name="times" size={22} color="#999" />
-              </TouchableOpacity>
             </View>
-            
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-              {pastBookings.length > 0 ? (
-                pastBookings.map((booking) => (
-                  <View key={booking.id} style={styles.historyItem}>
-                    <View style={styles.historyItemLeft}>
-                      <FontAwesome 
-                        name={booking.status === 'completed' ? "check-circle" : "times-circle"} 
-                        size={20} 
-                        color={booking.status === 'completed' ? "#4CAF50" : "#F44336"} 
-                      />
-                      <View style={styles.historyItemDetails}>
-                        <Text style={styles.historyItemRestaurant}>{booking.restaurantName}</Text>
-                        <Text style={styles.historyItemDate}>{booking.date} at {booking.time}</Text>
-                        <Text style={styles.historyItemGuests}>{booking.guests} guests</Text>
-                      </View>
-                    </View>
-                    <View style={[styles.historyStatus, { backgroundColor: getStatusColor(booking.status) + '20' }]}>
-                      <Text style={[styles.historyStatusText, { color: getStatusColor(booking.status) }]}>
-                        {getStatusText(booking.status)}
-                      </Text>
-                    </View>
-                  </View>
-                ))
-              ) : (
-                <View style={styles.emptyHistory}>
-                  <FontAwesome name="history" size={40} color="#666" />
-                  <Text style={styles.emptyHistoryText}>No booking history yet</Text>
-                </View>
-              )}
-            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -403,338 +407,322 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1a1a1a',
   },
-  center: {
+  header: {
+    paddingTop: 70,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: '#2d2d2d',
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  headerSubtitle: {
+    color: '#999',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#FFFFFF',
-    marginTop: 15,
+    color: '#fff',
+    fontSize: 16,
+    marginTop: 12,
   },
-  header: {
-    paddingTop: 50,
+  scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: '#2d2d2d',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    paddingBottom: 40,
   },
-  title: {
+  statsCard: {
+    flexDirection: 'row',
+    backgroundColor: '#2d2d2d',
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 20,
+    marginBottom: 24,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statValue: {
+    color: '#FFD700',
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  statLabel: {
+    color: '#999',
+    fontSize: 12,
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: '#444',
   },
   newBookingButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#FFD700',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 5,
+    padding: 18,
+    borderRadius: 12,
+    marginBottom: 24,
+    gap: 12,
   },
   newBookingText: {
-    color: '#000000',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  quickActions: {
-    flexDirection: 'row',
-    padding: 20,
-    gap: 10,
-  },
-  quickAction: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: '#2d2d2d',
-    padding: 15,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#444',
-  },
-  quickActionText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    marginTop: 8,
-  },
-  section: {
-    paddingHorizontal: 20,
-    marginBottom: 25,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 15,
-  },
-  sectionTitle: {
+    color: '#1a1a1a',
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFFFFF',
   },
-  sectionCount: {
-    fontSize: 16,
-    color: '#FFD700',
-    fontWeight: '600',
-  },
-  seeAllText: {
-    color: '#FFD700',
-    fontSize: 14,
+  sectionTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
   },
   bookingCard: {
     backgroundColor: '#2d2d2d',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#444',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+  },
+  pastBookingCard: {
+    opacity: 0.7,
   },
   bookingHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    alignItems: 'flex-start',
+    marginBottom: 12,
   },
-  restaurantName: {
-    fontSize: 16,
+  bookingDate: {
+    color: '#fff',
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFFFFF',
-    flex: 1,
-    marginRight: 10,
+    marginBottom: 4,
+  },
+  bookingTime: {
+    color: '#999',
+    fontSize: 14,
   },
   statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  statusIcon: {
+    marginRight: 6,
   },
   statusText: {
     fontSize: 12,
     fontWeight: '600',
   },
-  bookingDetails: {
-    flexDirection: 'row',
-    marginBottom: 10,
-    gap: 15,
-  },
-  detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  detailText: {
+  specialRequests: {
     color: '#999',
     fontSize: 14,
+    marginBottom: 16,
+    lineHeight: 20,
   },
-  requestsContainer: {
-    backgroundColor: '#1a1a1a',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-  requestsLabel: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 5,
-  },
-  requestsText: {
-    fontSize: 14,
-    color: '#FFFFFF',
+  specialRequestsLabel: {
+    color: '#FFD700',
+    fontWeight: '500',
   },
   bookingActions: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
   },
   actionButton: {
-    flex: 1,
-    padding: 10,
-    borderRadius: 8,
+    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.3)',
+    borderColor: '#FFD700',
+    gap: 8,
   },
-  actionButtonText: {
+  actionText: {
     color: '#FFD700',
     fontSize: 14,
     fontWeight: '600',
   },
   cancelButton: {
-    backgroundColor: 'rgba(244, 67, 54, 0.1)',
-    borderColor: 'rgba(244, 67, 54, 0.3)',
+    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+    borderColor: '#FF6B6B',
   },
-  cancelButtonText: {
-    color: '#F44336',
+  cancelText: {
+    color: '#FF6B6B',
   },
-  emptyState: {
+  rebookButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFD700',
+    gap: 8,
+  },
+  rebookText: {
+    color: '#FFD700',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  emptySection: {
     alignItems: 'center',
     padding: 40,
-    backgroundColor: '#2d2d2d',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#444',
   },
-  emptyStateText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 15,
-    marginBottom: 5,
+  emptyTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 8,
   },
-  emptyStateSubtext: {
+  emptyText: {
     color: '#999',
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
+    lineHeight: 24,
   },
-  historyCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#2d2d2d',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#444',
-  },
-  historyLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  historyDetails: {
-    marginLeft: 15,
-    flex: 1,
-  },
-  historyRestaurant: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    marginBottom: 3,
-  },
-  historyDate: {
-    fontSize: 12,
-    color: '#999',
-  },
-  // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
-  modalCard: {
+  modalContent: {
     backgroundColor: '#2d2d2d',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    minHeight: '60%',
     maxHeight: '90%',
   },
   modalHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#444',
   },
   modalTitle: {
+    color: '#fff',
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFFFFF',
   },
   modalBody: {
     padding: 20,
   },
+  inputGroup: {
+    marginBottom: 20,
+  },
   inputLabel: {
-    fontSize: 14,
-    color: '#999',
-    marginBottom: 8,
+    color: '#fff',
+    fontSize: 16,
     fontWeight: '500',
+    marginBottom: 8,
   },
   input: {
     backgroundColor: '#1a1a1a',
-    color: '#FFFFFF',
-    padding: 15,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#444',
+    borderRadius: 12,
+    padding: 16,
+    color: '#fff',
     fontSize: 16,
-    marginBottom: 20,
+  },
+  inputHint: {
+    color: '#666',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  guestsSelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  guestButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#1a1a1a',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#444',
+  },
+  guestButtonSelected: {
+    backgroundColor: '#FFD700',
+    borderColor: '#FFD700',
+  },
+  guestButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  guestButtonTextSelected: {
+    color: '#1a1a1a',
   },
   textArea: {
-    minHeight: 80,
+    height: 100,
     textAlignVertical: 'top',
   },
-  bookButton: {
+  bookingInfo: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    padding: 16,
+    borderRadius: 8,
+    gap: 12,
+  },
+  bookingInfoText: {
+    flex: 1,
+    color: '#FFD700',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#444',
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#444',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmButton: {
+    flex: 1,
     backgroundColor: '#FFD700',
     padding: 16,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: 'center',
-    marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
   },
-  bookButtonDisabled: {
-    opacity: 0.7,
-  },
-  bookButtonText: {
-    color: '#000000',
+  confirmButtonText: {
+    color: '#1a1a1a',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  modalNote: {
-    color: '#999',
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 15,
-    paddingHorizontal: 10,
-  },
-  historyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#1a1a1a',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#444',
-  },
-  historyItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  historyItemDetails: {
-    marginLeft: 15,
-    flex: 1,
-  },
-  historyItemRestaurant: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    marginBottom: 3,
-  },
-  historyItemDate: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 2,
-  },
-  historyItemGuests: {
-    fontSize: 12,
-    color: '#999',
-  },
-  historyStatus: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  historyStatusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  emptyHistory: {
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyHistoryText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    marginTop: 15,
+  bottomSpacer: {
+    height: 20,
   },
 });

@@ -39,7 +39,7 @@ export default function CheckoutScreen() {
 
   const handlePlaceOrder = async () => {
     if (!user) {
-      Alert.alert('Login Required', 'Please login to place an order');
+      Alert.alert('Login Required', 'Please login to place your Mzansi Meals order');
       router.push('/login');
       return;
     }
@@ -379,7 +379,7 @@ export default function CheckoutScreen() {
           
           {!user && (
             <Text style={styles.loginHint}>
-              Please login to place an order
+              Please login to place your Mzansi Meals order
             </Text>
           )}
         </View>

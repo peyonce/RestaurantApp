@@ -17,8 +17,8 @@ export default function HomeScreen() {
         {/* Logo */}
         <View style={styles.logoContainer}>
           <Text style={styles.logoIcon}>🍽️</Text>
-          <Text style={styles.logoText}>ÉLÉGANCE</Text>
-          <Text style={styles.logoSubtext}>Fine Dining</Text>
+          <Text style={styles.logoText}>Mzansi Meals</Text>
+          <Text style={styles.logoSubtext}>Authentic South African Cuisine</Text>
         </View>
         
         {/* Tagline */}
@@ -30,15 +30,15 @@ export default function HomeScreen() {
         <View style={styles.features}>
           <View style={styles.featureItem}>
             <FontAwesome name="star" size={20} color="#FFD700" />
-            <Text style={styles.featureText}>Michelin-inspired</Text>
+            <Text style={styles.featureText}>South African-inspired</Text>
           </View>
           <View style={styles.featureItem}>
             <FontAwesome name="truck" size={20} color="#FFD700" />
-            <Text style={styles.featureText}>Premium delivery</Text>
+            <Text style={styles.featureText}>Authentic delivery</Text>
           </View>
           <View style={styles.featureItem}>
             <FontAwesome name="shield" size={20} color="#FFD700" />
-            <Text style={styles.featureText}>Quality guaranteed</Text>
+            <Text style={styles.featureText}>Authenticity guaranteed</Text>
           </View>
         </View>
         
@@ -46,14 +46,14 @@ export default function HomeScreen() {
         <View style={styles.buttonContainer}>
           <Link href="/login" asChild>
             <TouchableOpacity style={styles.primaryButton}>
-              <Text style={styles.primaryButtonText}>Get Started</Text>
+              <Text style={styles.primaryButtonText}>Explore Mzansi Meals</Text>
               <FontAwesome name="arrow-right" size={16} color="#1a1a1a" />
             </TouchableOpacity>
           </Link>
           
           <Link href="/register" asChild>
             <TouchableOpacity style={styles.secondaryButton}>
-              <Text style={styles.secondaryButtonText}>Create Account</Text>
+              <Text style={styles.secondaryButtonText}>Join Mzansi Meals</Text>
             </TouchableOpacity>
           </Link>
         </View>

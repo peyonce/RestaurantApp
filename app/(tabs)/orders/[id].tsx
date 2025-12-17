@@ -13,7 +13,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 export default function OrderDetailsScreen() {
   const { id } = useLocalSearchParams();
 
-  // Mock order data
+  // Mock order data - WITH MZANSI MEALS BRANDING
   const order = {
     id: id || '1',
     restaurant: 'Mzansi Meals',
@@ -29,21 +29,21 @@ export default function OrderDetailsScreen() {
         name: 'Bunny Chow',
         price: 28.99,
         quantity: 2,
-        image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd',
+        image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b',
       },
       {
         id: '2',
         name: 'Rooibos Tea',
         price: 16.99,
         quantity: 1,
-        image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd',
+        image: 'https://images.unsplash.com/photo-1591261730799-ee4e6c2d16d7',
       },
       {
         id: '3',
         name: 'Melktert',
         price: 12.99,
         quantity: 1,
-        image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587',
+        image: 'https://images.unsplash.com/photo-1563729785-e5f1fac3e7bf',
       },
     ],
     orderNumber: '#ORD-2024-0015',

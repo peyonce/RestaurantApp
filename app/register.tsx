@@ -109,8 +109,8 @@ export default function RegisterScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
           <FontAwesome name="user-plus" size={80} color="#FFD700" />
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join ÉLÉGANCE today</Text>
+          <Text style={styles.title}>Join Mzansi Meals</Text>
+          <Text style={styles.subtitle}>Join Mzansi Meals today</Text>
         </View>
 
         <View style={styles.form}>
@@ -192,12 +192,12 @@ export default function RegisterScreen() {
             ) : showSuccess ? (
               <>
                 <FontAwesome name="check-circle" size={24} color="#1a1a1a" />
-                <Text style={styles.signupButtonText}>Account Created!</Text>
+                <Text style={styles.signupButtonText}>Mzansi Meals Account Created!</Text>
               </>
             ) : (
               <>
                 <Text style={styles.signupButtonText}>
-                  {isFormValid() ? 'Create Account' : 'Fill All Fields'}
+                  {isFormValid() ? 'Create Mzansi Meals Account' : 'Fill All Fields to Join'}
                 </Text>
                 {isFormValid() && <FontAwesome name="arrow-right" size={20} color="#1a1a1a" />}
               </>
@@ -205,7 +205,7 @@ export default function RegisterScreen() {
           </TouchableOpacity>
 
           {isFormValid() && (
-            <Text style={styles.readyText}>✓ All fields are valid. Press "Create Account"</Text>
+            <Text style={styles.readyText}>✓ All fields are valid. Press "Create Mzansi Meals Account"</Text>
           )}
 
           <View style={styles.divider}>
@@ -226,7 +226,7 @@ export default function RegisterScreen() {
           <Text style={styles.termsText}>
             By creating an account, you agree to our Terms of Service and Privacy Policy
           </Text>
-          <Text style={styles.footerText}>ÉLÉGANCE Restaurant App</Text>
+          <Text style={styles.footerText}>Mzansi Meals Restaurant App</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

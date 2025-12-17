@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert, Modal, TextInput, Switch, ActivityIndicator } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { auth, db } from '../config/firebase';
 import { signOut, updateProfile, updateEmail, onAuthStateChanged } from 'firebase/auth';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
@@ -19,458 +20,453 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
 
-  // Listen to auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUser(user);
-        setUserName(user.displayName || 'User');
-        setUserEmail(user.email || 'No email');
-        
-        // Fetch user profile from Firestore
-        try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            setPhoneNumber(userData.phoneNumber || '');
-            setAddress(userData.address || '');
-          }
-        } catch (error) {
-          console.error('Error fetching user profile:', error);
-        }
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        setUserName(currentUser.displayName || 'Mzansi Customer');
+        setUserEmail(currentUser.email || '');
+        fetchUserData(currentUser.uid);
       } else {
-        setUser(null);
-        setUserName('Guest User');
-        setUserEmail('Please sign in');
-        setPhoneNumber('');
-        setAddress('');
+        router.replace('/login');
       }
     });
-
-    return () => unsubscribe();
+    return unsubscribe;
   }, []);
 
-  // Handle payment submission
-  const handleAddCard = () => {
-    if (cardNumber.length === 16 && cvv.length === 3) {
-      Alert.alert('Success', 'Payment method added successfully');
-      setCardNumber('');
-      setCvv('');
-      setShowPayment(false);
-    } else {
-      Alert.alert('Error', 'Card number must be 16 digits and CVV must be 3 digits');
-    }
-  };
-
-  // Handle notifications save
-  const handleSaveNotifications = async () => {
-    if (!user) {
-      Alert.alert('Error', 'Please sign in first');
-      return;
-    }
-
+  const fetchUserData = async (userId: string) => {
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
-        notifications: { orderUpdates },
-        updatedAt: new Date().toISOString()
-      });
-      Alert.alert('Settings Saved', 'Notification preferences updated');
-      setShowNotifications(false);
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        setPhoneNumber(data.phoneNumber || '');
+        setAddress(data.address || '');
+      }
     } catch (error) {
-      Alert.alert('Error', 'Failed to save settings');
-      console.error(error);
+      console.error('Error fetching user data:', error);
     }
   };
 
-  // Handle profile update
-  const handleUpdateProfile = async () => {
-    if (!user) {
-      Alert.alert('Error', 'Please sign in first');
-      return;
-    }
+  const handleSignOut = async () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out of Mzansi Meals?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut(auth);
+              router.replace('/login');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to sign out');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
     
     setLoading(true);
     try {
       // Update Firebase Auth profile
-      if (userName !== user.displayName) {
-        await updateProfile(user, {
-          displayName: userName
-        });
-      }
-      
-      // Update email if changed
+      await updateProfile(user, { displayName: userName });
       if (userEmail !== user.email) {
         await updateEmail(user, userEmail);
       }
       
       // Update Firestore user document
       await updateDoc(doc(db, 'users', user.uid), {
-        name: userName,
-        email: userEmail,
-        phoneNumber: phoneNumber,
-        address: address,
-        updatedAt: new Date().toISOString()
+        phoneNumber,
+        address,
+        updatedAt: new Date()
       });
       
-      Alert.alert('Success', 'Profile updated successfully');
+      Alert.alert('Success', 'Your Mzansi Meals profile has been updated!');
       setShowEditProfile(false);
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to update profile');
-      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle logout with Firebase
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Logout', 
-          style: 'destructive', 
-          onPress: async () => {
-            try {
-              await signOut(auth);
-            } catch (error) {
-              Alert.alert('Error', 'Failed to logout');
-            }
-          }
-        }
-      ]
-    );
+  const handleSavePayment = () => {
+    if (cardNumber.length !== 16) {
+      Alert.alert('Invalid Card', 'Please enter a valid 16-digit card number');
+      return;
+    }
+    if (cvv.length !== 3) {
+      Alert.alert('Invalid CVV', 'Please enter a valid 3-digit CVV');
+      return;
+    }
+    Alert.alert('Success', 'Payment method saved for Mzansi Meals');
+    setShowPayment(false);
+    setCardNumber('');
+    setCvv('');
   };
 
-  // Handle sign in
-  const handleSignIn = () => {
-    Alert.alert('Sign In', 'Redirect to login screen', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'OK', onPress: () => {
-        // Navigate to login screen
-        console.log('Navigate to login');
-      }}
-    ]);
+  const formatCardNumber = (number: string) => {
+    return number.replace(/(\d{4})/g, '$1 ').trim();
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   return (
-    <View style={styles.container}>
-      
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Profile</Text>
+        <Text style={styles.headerTitle}>Mzansi Meals Profile</Text>
+        <Text style={styles.headerSubtitle}>Manage your South African food experience</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        
-        {/* Profile */}
-        <View style={styles.profileCard}>
-          <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400' }}
-            style={styles.avatar}
-          />
-          <View style={styles.profileInfo}>
-            <Text style={styles.name}>{userName}</Text>
-            <Text style={styles.email}>{userEmail}</Text>
-            {!user && (
-              <Text style={styles.guestText}>Guest Mode</Text>
-            )}
+      {/* Profile Card */}
+      <View style={styles.profileCard}>
+        <View style={styles.avatarContainer}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{getInitials(userName)}</Text>
           </View>
-          {user && (
-            <TouchableOpacity 
-              style={styles.editButton}
-              onPress={() => setShowEditProfile(true)}
-              activeOpacity={0.7}
-            >
-              <FontAwesome name="edit" size={18} color="#FFD700" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {!user ? (
-          // Sign In button for guests
           <TouchableOpacity 
-            style={styles.signInButton}
-            onPress={handleSignIn}
-            activeOpacity={0.7}
+            style={styles.editAvatarButton}
+            onPress={() => setShowEditProfile(true)}
           >
-            <FontAwesome name="sign-in" size={20} color="#FFFFFF" />
-            <Text style={styles.signInText}>Sign In to Continue</Text>
+            <FontAwesome name="camera" size={16} color="#1a1a1a" />
           </TouchableOpacity>
-        ) : (
-          <>
-            {/* Menu */}
-            <View style={styles.menu}>
-              <TouchableOpacity 
-                style={styles.menuItem} 
-                onPress={() => setShowEditProfile(true)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.menuItemContent}>
-                  <FontAwesome name="user" size={20} color="#FFD700" style={styles.menuIcon} />
-                  <Text style={styles.menuText}>Personal Information</Text>
-                </View>
-                <FontAwesome name="chevron-right" size={16} color="#999" />
-              </TouchableOpacity>
+        </View>
+        
+        <Text style={styles.userName}>{userName}</Text>
+        <Text style={styles.userEmail}>{userEmail}</Text>
+        
+        <View style={styles.profileStats}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>12</Text>
+            <Text style={styles.statLabel}>Orders</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>R1,845.92</Text>
+            <Text style={styles.statLabel}>Total</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>4.8</Text>
+            <Text style={styles.statLabel}>Rating</Text>
+          </View>
+        </View>
+      </View>
 
-              <TouchableOpacity 
-                style={styles.menuItem} 
-                onPress={() => Alert.alert('Address', 'Address management screen')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.menuItemContent}>
-                  <FontAwesome name="map-marker" size={20} color="#FFD700" style={styles.menuIcon} />
-                  <Text style={styles.menuText}>Address</Text>
-                </View>
-                <FontAwesome name="chevron-right" size={16} color="#999" />
-              </TouchableOpacity>
+      {/* Menu Items */}
+      <View style={styles.menuSection}>
+        <Text style={styles.sectionTitle}>Account Settings</Text>
+        
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => setShowEditProfile(true)}
+        >
+          <View style={styles.menuIconContainer}>
+            <FontAwesome name="user" size={20} color="#FFD700" />
+          </View>
+          <Text style={styles.menuText}>Edit Profile</Text>
+          <FontAwesome name="chevron-right" size={16} color="#999" />
+        </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.menuItem} 
-                onPress={() => setShowPayment(true)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.menuItemContent}>
-                  <FontAwesome name="credit-card" size={20} color="#FFD700" style={styles.menuIcon} />
-                  <Text style={styles.menuText}>Payment Methods</Text>
-                </View>
-                <FontAwesome name="chevron-right" size={16} color="#999" />
-              </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => setShowPayment(true)}
+        >
+          <View style={styles.menuIconContainer}>
+            <FontAwesome name="credit-card" size={20} color="#FFD700" />
+          </View>
+          <Text style={styles.menuText}>Payment Methods</Text>
+          <FontAwesome name="chevron-right" size={16} color="#999" />
+        </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.menuItem} 
-                onPress={() => setShowNotifications(true)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.menuItemContent}>
-                  <FontAwesome name="bell" size={20} color="#FFD700" style={styles.menuIcon} />
-                  <Text style={styles.menuText}>Notifications</Text>
-                </View>
-                <FontAwesome name="chevron-right" size={16} color="#999" />
-              </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => setShowNotifications(true)}
+        >
+          <View style={styles.menuIconContainer}>
+            <FontAwesome name="bell" size={20} color="#FFD700" />
+          </View>
+          <Text style={styles.menuText}>Notifications</Text>
+          <FontAwesome name="chevron-right" size={16} color="#999" />
+        </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.menuItem} 
-                onPress={() => Alert.alert('Privacy & Security', 'Privacy settings screen')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.menuItemContent}>
-                  <FontAwesome name="shield" size={20} color="#FFD700" style={styles.menuIcon} />
-                  <Text style={styles.menuText}>Privacy & Security</Text>
-                </View>
-                <FontAwesome name="chevron-right" size={16} color="#999" />
-              </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => router.push('/orders')}
+        >
+          <View style={styles.menuIconContainer}>
+            <FontAwesome name="history" size={20} color="#FFD700" />
+          </View>
+          <Text style={styles.menuText}>Order History</Text>
+          <FontAwesome name="chevron-right" size={16} color="#999" />
+        </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={styles.menuItem} 
-                onPress={() => Alert.alert('Settings', 'App settings screen')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.menuItemContent}>
-                  <FontAwesome name="cog" size={20} color="#FFD700" style={styles.menuIcon} />
-                  <Text style={styles.menuText}>Settings</Text>
-                </View>
-                <FontAwesome name="chevron-right" size={16} color="#999" />
-              </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => router.push('/settings')}
+        >
+          <View style={styles.menuIconContainer}>
+            <FontAwesome name="cog" size={20} color="#FFD700" />
+          </View>
+          <Text style={styles.menuText}>App Settings</Text>
+          <FontAwesome name="chevron-right" size={16} color="#999" />
+        </TouchableOpacity>
+      </View>
 
-              <TouchableOpacity 
-                style={styles.menuItem} 
-                onPress={() => Alert.alert('Help & Support', 'Help center screen')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.menuItemContent}>
-                  <FontAwesome name="question-circle" size={20} color="#FFD700" style={styles.menuIcon} />
-                  <Text style={styles.menuText}>Help & Support</Text>
-                </View>
-                <FontAwesome name="chevron-right" size={16} color="#999" />
+      {/* Help Section */}
+      <View style={styles.menuSection}>
+        <Text style={styles.sectionTitle}>Help & Support</Text>
+        
+        <TouchableOpacity style={styles.menuItem}>
+          <View style={styles.menuIconContainer}>
+            <FontAwesome name="question-circle" size={20} color="#FFD700" />
+          </View>
+          <Text style={styles.menuText}>Help Center</Text>
+          <FontAwesome name="chevron-right" size={16} color="#999" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem}>
+          <View style={styles.menuIconContainer}>
+            <FontAwesome name="phone" size={20} color="#FFD700" />
+          </View>
+          <Text style={styles.menuText}>Contact Mzansi Meals</Text>
+          <FontAwesome name="chevron-right" size={16} color="#999" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem}>
+          <View style={styles.menuIconContainer}>
+            <FontAwesome name="star" size={20} color="#FFD700" />
+          </View>
+          <Text style={styles.menuText}>Rate Our App</Text>
+          <FontAwesome name="chevron-right" size={16} color="#999" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Sign Out Button */}
+      <TouchableOpacity 
+        style={styles.signOutButton}
+        onPress={handleSignOut}
+      >
+        <FontAwesome name="sign-out" size={20} color="#FF6B6B" />
+        <Text style={styles.signOutText}>Sign Out</Text>
+      </TouchableOpacity>
+
+      {/* Edit Profile Modal */}
+      <Modal
+        visible={showEditProfile}
+        animationType="slide"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Mzansi Profile</Text>
+              <TouchableOpacity onPress={() => setShowEditProfile(false)}>
+                <FontAwesome name="times" size={24} color="#999" />
               </TouchableOpacity>
             </View>
-
-            {/* Logout */}
-            <TouchableOpacity 
-              style={styles.logout} 
-              onPress={handleLogout}
-              activeOpacity={0.7}
-            >
-              <FontAwesome name="sign-out" size={20} color="#FFFFFF" style={styles.logoutIcon} />
-              <Text style={styles.logoutText}>Logout</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-      </ScrollView>
+            
+            <ScrollView style={styles.modalBody}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Full Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={userName}
+                  onChangeText={setUserName}
+                  placeholder="Enter your name"
+                  placeholderTextColor="#666"
+                />
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Email</Text>
+                <TextInput
+                  style={styles.input}
+                  value={userEmail}
+                  onChangeText={setUserEmail}
+                  placeholder="Enter your email"
+                  placeholderTextColor="#666"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Phone Number</Text>
+                <TextInput
+                  style={styles.input}
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  placeholder="+27 11 123 4567"
+                  placeholderTextColor="#666"
+                  keyboardType="phone-pad"
+                />
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Delivery Address</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={address}
+                  onChangeText={setAddress}
+                  placeholder="Enter your delivery address"
+                  placeholderTextColor="#666"
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
+            </ScrollView>
+            
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => setShowEditProfile(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.saveButton}
+                onPress={handleSaveProfile}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#1a1a1a" size="small" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Payment Modal */}
-      <Modal 
-        visible={showPayment} 
-        transparent
+      <Modal
+        visible={showPayment}
         animationType="slide"
-        onRequestClose={() => setShowPayment(false)}
+        transparent={true}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPressOut={() => setShowPayment(false)}
-        >
-          <View style={styles.modalContainer} onStartShouldSetResponder={() => true}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Add Payment Method</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Card Number"
-                placeholderTextColor="#999"
-                value={cardNumber}
-                onChangeText={setCardNumber}
-                keyboardType="numeric"
-                maxLength={16}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="CVV"
-                placeholderTextColor="#999"
-                value={cvv}
-                onChangeText={setCvv}
-                keyboardType="numeric"
-                secureTextEntry
-                maxLength={3}
-              />
-              <TouchableOpacity 
-                style={[styles.button, (!cardNumber || !cvv) && styles.buttonDisabled]} 
-                onPress={handleAddCard}
-                disabled={!cardNumber || !cvv}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.buttonText}>Add Card</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Payment Methods</Text>
+              <TouchableOpacity onPress={() => setShowPayment(false)}>
+                <FontAwesome name="times" size={24} color="#999" />
               </TouchableOpacity>
+            </View>
+            
+            <View style={styles.modalBody}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Card Number</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formatCardNumber(cardNumber)}
+                  onChangeText={(text) => setCardNumber(text.replace(/\s/g, ''))}
+                  placeholder="1234 5678 9012 3456"
+                  placeholderTextColor="#666"
+                  keyboardType="number-pad"
+                  maxLength={19}
+                />
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>CVV</Text>
+                <TextInput
+                  style={styles.input}
+                  value={cvv}
+                  onChangeText={setCvv}
+                  placeholder="123"
+                  placeholderTextColor="#666"
+                  keyboardType="number-pad"
+                  maxLength={3}
+                  secureTextEntry
+                />
+              </View>
+              
+              <Text style={styles.securityNote}>
+                🔒 Your payment information is securely encrypted
+              </Text>
+            </View>
+            
+            <View style={styles.modalFooter}>
               <TouchableOpacity 
-                onPress={() => setShowPayment(false)}
-                activeOpacity={0.7}
                 style={styles.cancelButton}
+                onPress={() => setShowPayment(false)}
               >
-                <Text style={styles.cancelText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.saveButton}
+                onPress={handleSavePayment}
+              >
+                <Text style={styles.saveButtonText}>Save Card</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
 
       {/* Notifications Modal */}
-      <Modal 
-        visible={showNotifications} 
-        transparent
+      <Modal
+        visible={showNotifications}
         animationType="slide"
-        onRequestClose={() => setShowNotifications(false)}
+        transparent={true}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPressOut={() => setShowNotifications(false)}
-        >
-          <View style={styles.modalContainer} onStartShouldSetResponder={() => true}>
-            <View style={styles.modalContent}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Notifications</Text>
-              <View style={styles.switchRow}>
-                <Text style={styles.switchText}>Order Updates</Text>
-                <Switch 
-                  value={orderUpdates} 
+              <TouchableOpacity onPress={() => setShowNotifications(false)}>
+                <FontAwesome name="times" size={24} color="#999" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.modalBody}>
+              <View style={styles.switchContainer}>
+                <Text style={styles.switchLabel}>Order Updates</Text>
+                <Switch
+                  value={orderUpdates}
                   onValueChange={setOrderUpdates}
-                  trackColor={{ false: '#767577', true: '#FFD700' }}
-                  thumbColor={orderUpdates ? '#fff' : '#f4f3f4'}
+                  trackColor={{ false: '#767577', true: '#4CAF50' }}
+                  thumbColor={orderUpdates ? '#FFD700' : '#f4f3f4'}
                 />
               </View>
+              
+              <Text style={styles.notificationText}>
+                Receive updates about your Mzansi Meals orders, promotions, and new menu items.
+              </Text>
+            </View>
+            
+            <View style={styles.modalFooter}>
               <TouchableOpacity 
-                style={styles.button} 
-                onPress={handleSaveNotifications}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.buttonText}>Save</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
+                style={styles.saveButton}
                 onPress={() => setShowNotifications(false)}
-                activeOpacity={0.7}
-                style={styles.cancelButton}
               >
-                <Text style={styles.cancelText}>Cancel</Text>
+                <Text style={styles.saveButtonText}>Done</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
 
-      {/* Edit Profile Modal */}
-      <Modal 
-        visible={showEditProfile} 
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowEditProfile(false)}
-      >
-        <TouchableOpacity 
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPressOut={() => setShowEditProfile(false)}
-        >
-          <View style={styles.modalContainer} onStartShouldSetResponder={() => true}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Edit Profile</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Full Name"
-                placeholderTextColor="#999"
-                value={userName}
-                onChangeText={setUserName}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                placeholderTextColor="#999"
-                value={userEmail}
-                onChangeText={setUserEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Phone Number"
-                placeholderTextColor="#999"
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                keyboardType="phone-pad"
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Address"
-                placeholderTextColor="#999"
-                value={address}
-                onChangeText={setAddress}
-                multiline
-                numberOfLines={3}
-              />
-              <TouchableOpacity 
-                style={[styles.button, loading && styles.buttonDisabled]} 
-                onPress={handleUpdateProfile}
-                disabled={loading}
-                activeOpacity={0.7}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#000000" />
-                ) : (
-                  <Text style={styles.buttonText}>Save Changes</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity 
-                onPress={() => setShowEditProfile(false)}
-                activeOpacity={0.7}
-                style={styles.cancelButton}
-              >
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    </View>
+      <View style={styles.bottomSpacer} />
+    </ScrollView>
   );
 }
 
@@ -480,184 +476,250 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a1a',
   },
   header: {
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingTop: 70,
     paddingHorizontal: 20,
+    paddingBottom: 20,
     backgroundColor: '#2d2d2d',
   },
-  title: {
-    fontSize: 28,
+  headerTitle: {
+    color: '#fff',
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
   },
-  scrollContent: {
-    paddingBottom: 30,
+  headerSubtitle: {
+    color: '#999',
+    fontSize: 14,
+    marginTop: 4,
   },
   profileCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#2d2d2d',
+    borderRadius: 20,
     margin: 20,
-    padding: 20,
-    borderRadius: 15,
+    padding: 24,
+    alignItems: 'center',
+    marginTop: -40,
+  },
+  avatarContainer: {
     position: 'relative',
+    marginBottom: 16,
   },
   avatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    marginRight: 15,
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  name: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 5,
-  },
-  email: {
-    fontSize: 14,
-    color: '#999',
-    marginBottom: 5,
-  },
-  guestText: {
-    fontSize: 12,
-    color: '#FFD700',
-    fontStyle: 'italic',
-  },
-  editButton: {
-    padding: 10,
-  },
-  signInButton: {
-    flexDirection: 'row',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#FFD700',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4CAF50',
-    marginHorizontal: 20,
-    marginBottom: 20,
-    padding: 18,
-    borderRadius: 15,
-    gap: 10,
   },
-  signInText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+  avatarText: {
+    color: '#1a1a1a',
+    fontSize: 32,
     fontWeight: 'bold',
   },
-  menu: {
-    backgroundColor: '#2d2d2d',
-    marginHorizontal: 20,
+  editAvatarButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#FFD700',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#2d2d2d',
+  },
+  userName: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  userEmail: {
+    color: '#999',
+    fontSize: 16,
     marginBottom: 20,
-    borderRadius: 15,
-    overflow: 'hidden',
+  },
+  profileStats: {
+    flexDirection: 'row',
+    width: '100%',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 16,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statValue: {
+    color: '#FFD700',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  statLabel: {
+    color: '#999',
+    fontSize: 12,
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: '#444',
+  },
+  menuSection: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    marginLeft: 4,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    backgroundColor: '#2d2d2d',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
   },
-  menuItemContent: {
-    flexDirection: 'row',
+  menuIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
     alignItems: 'center',
-  },
-  menuIcon: {
-    width: 30,
-    marginRight: 15,
+    justifyContent: 'center',
+    marginRight: 16,
   },
   menuText: {
+    flex: 1,
+    color: '#fff',
     fontSize: 16,
-    color: '#FFFFFF',
   },
-  logout: {
+  signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FF4444',
+    backgroundColor: 'rgba(255, 107, 107, 0.1)',
     marginHorizontal: 20,
-    padding: 18,
-    borderRadius: 15,
-    gap: 10,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FF6B6B',
+    marginBottom: 40,
   },
-  logoutIcon: {
-    marginRight: 10,
-  },
-  logoutText: {
-    color: '#FFFFFF',
+  signOutText: {
+    color: '#FF6B6B',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    marginLeft: 12,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    width: '90%',
-    maxWidth: 400,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
   },
   modalContent: {
     backgroundColor: '#2d2d2d',
-    padding: 25,
-    borderRadius: 15,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    minHeight: '60%',
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#444',
   },
   modalTitle: {
-    fontSize: 22,
+    color: '#fff',
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 25,
-    textAlign: 'center',
+  },
+  modalBody: {
+    padding: 20,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
   },
   input: {
     backgroundColor: '#1a1a1a',
-    color: '#FFFFFF',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
+    borderRadius: 12,
+    padding: 16,
+    color: '#fff',
     fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#333',
   },
-  button: {
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#444',
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#444',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  saveButton: {
+    flex: 1,
     backgroundColor: '#FFD700',
     padding: 16,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: 'center',
-    marginTop: 10,
   },
-  buttonDisabled: {
-    backgroundColor: '#666',
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#000000',
+  saveButtonText: {
+    color: '#1a1a1a',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  cancelButton: {
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  cancelText: {
-    color: '#999',
-    fontSize: 16,
-  },
-  switchRow: {
+  switchContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 25,
-    paddingHorizontal: 5,
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  switchText: {
+  switchLabel: {
+    color: '#fff',
     fontSize: 16,
-    color: '#FFFFFF',
+  },
+  notificationText: {
+    color: '#999',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  securityNote: {
+    color: '#4CAF50',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 20,
+    padding: 12,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderRadius: 8,
+  },
+  bottomSpacer: {
+    height: 20,
   },
 });

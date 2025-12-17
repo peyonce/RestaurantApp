@@ -1,4 +1,4 @@
-  import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
 import {
@@ -31,210 +31,353 @@ export default function HomeScreen() {
 
   const categories: Category[] = [
     { id: '1', name: 'Burgers', icon: '🍔' },
-    { id: '2', name: 'Pizza', icon: '🍕' },
-    { id: '3', name: 'Drinks', icon: '🥤' },
-    { id: '4', name: 'Desserts', icon: '🍰' },
-    { id: '5', name: 'Salads', icon: '🥗' },
-    { id: '6', name: 'Pasta', icon: '🍝' },
+    { id: '2', name: 'Braai', icon: '🔥' },
+    { id: '3', name: 'Mains', icon: '🍛' },
+    { id: '4', name: 'Sides', icon: '🍟' },
+    { id: '5', name: 'Drinks', icon: '🥤' },
+    { id: '6', name: 'Desserts', icon: '🍰' },
   ];
 
   const popularItems: FoodItem[] = [
     {
       id: '1',
-      name: 'Classic Burger',
-      description: 'Beef patty with cheese and vegetables',
-      price: 12.99,
+      name: 'Boerewors Burger',
+      description: 'Traditional SA sausage with chakalaka relish',
+      price: 89.99,
       image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400',
     },
     {
       id: '2',
-      name: 'Pepperoni Pizza',
-      description: 'Classic pizza with pepperoni',
-      price: 18.99,
-      image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400',
+      name: 'Braai Platter',
+      description: 'Mixed grill with boerewors, steak and pap',
+      price: 189.99,
+      image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w-400',
+    },
+    {
+      id: '3',
+      name: 'Bobotie Bowl',
+      description: 'Cape Malay minced meat bake with yellow rice',
+      price: 125.99,
+      image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400',
+    },
+    {
+      id: '4',
+      name: 'Koeksisters',
+      description: 'Traditional syrup-coated doughnuts',
+      price: 28.99,
+      image: 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=400',
     },
   ];
 
+  const handleAddToCart = (item: FoodItem) => {
+    addToCart({
+      menuItemId: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: 1,
+      image: item.image,
+      imageUrl: item.image
+    });
+    Alert.alert('Added!', `${item.name} added to cart`);
+  };
+
+  const handleCategoryPress = (category: Category) => {
+    router.push(`/menu?category=${category.name}`);
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Good evening! 👋</Text>
-          <Text style={styles.location}>
-            <FontAwesome name="map-marker" size={16} color="#FFD700" />
-            {' '}Delivery to: Home
-          </Text>
+          <Text style={styles.welcomeText}>Welcome to</Text>
+          <Text style={styles.restaurantName}>Mzansi Meals</Text>
+          <Text style={styles.slogan}>Taste the Rainbow Nation 🇿🇦</Text>
         </View>
-        <TouchableOpacity 
-          style={styles.profileButton}
-          onPress={() => router.push('/profile')}
-        >
-          <FontAwesome name="user-circle" size={32} color="#FFD700" />
+        <TouchableOpacity onPress={() => router.push('/profile')}>
+          <FontAwesome name="user-circle" size={40} color="#FFD700" />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.searchContainer}>
-        <TouchableOpacity 
-          style={styles.searchBar}
-          onPress={() => router.push('/menu')}
-        >
-          <FontAwesome name="search" size={20} color="#999" />
-          <Text style={styles.searchText}>Search food or restaurant...</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Search Bar */}
+      <TouchableOpacity 
+        style={styles.searchBar}
+        onPress={() => router.push('/menu')}
+      >
+        <FontAwesome name="search" size={20} color="#999" />
+        <Text style={styles.searchText}>Search Mzansi dishes...</Text>
+      </TouchableOpacity>
 
+      {/* Categories */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Categories</Text>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesContainer}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {categories.map((category) => (
-            <TouchableOpacity 
-              key={category.id} 
+            <TouchableOpacity
+              key={category.id}
               style={styles.categoryCard}
-              onPress={() => router.push(`/menu?category=${category.name.toLowerCase()}`)}
+              onPress={() => handleCategoryPress(category)}
             >
-              <View style={styles.categoryIcon}>
-                <Text style={styles.categoryEmoji}>{category.icon}</Text>
-              </View>
+              <Text style={styles.categoryIcon}>{category.icon}</Text>
               <Text style={styles.categoryName}>{category.name}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
 
+      {/* Popular Items */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Popular Items</Text>
+          <Text style={styles.sectionTitle}>Popular Now</Text>
           <TouchableOpacity onPress={() => router.push('/menu')}>
             <Text style={styles.seeAll}>See All</Text>
           </TouchableOpacity>
         </View>
-
-        {popularItems.map((item) => (
-          <TouchableOpacity 
-            key={item.id} 
-            style={styles.foodCard}
-            onPress={() => router.push(`/menu/${item.id}`)}
-          >
-            <Image source={{ uri: item.image }} style={styles.foodImage} />
-            <View style={styles.foodInfo}>
-              <Text style={styles.foodName}>{item.name}</Text>
-              <Text style={styles.foodDescription} numberOfLines={2}>
-                {item.description}
-              </Text>
-              <View style={styles.foodFooter}>
-                <Text style={styles.foodPrice}>${item.price.toFixed(2)}</Text>
-                <TouchableOpacity 
-                  style={styles.addButton}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    addToCart({
-                      menuItemId: item.id,
-                      name: item.name,
-                      price: item.price,
-                      quantity: 1,
-                      imageUrl: item.image
-                    });
-                    Alert.alert('Added to Cart', `${item.name} added to cart!`);
-                  }}
-                >
-                  <Text style={styles.addButtonText}>+ Add</Text>
-                </TouchableOpacity>
+        
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {popularItems.map((item) => (
+            <View key={item.id} style={styles.foodCard}>
+              <Image source={{ uri: item.image }} style={styles.foodImage} />
+              <View style={styles.foodInfo}>
+                <Text style={styles.foodName}>{item.name}</Text>
+                <Text style={styles.foodDescription} numberOfLines={2}>
+                  {item.description}
+                </Text>
+                <View style={styles.foodFooter}>
+                  <Text style={styles.foodPrice}>R{item.price.toFixed(2)}</Text>
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={() => handleAddToCart(item)}
+                  >
+                    <FontAwesome name="plus" size={16} color="#1a1a1a" />
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </TouchableOpacity>
-        ))}
+          ))}
+        </ScrollView>
       </View>
 
-      <View style={styles.features}>
-        <View style={styles.featureItem}>
-          <FontAwesome name="truck" size={24} color="#FFD700" />
-          <Text style={styles.featureTitle}>Fast Delivery</Text>
-          <Text style={styles.featureText}>30-45 minutes</Text>
-        </View>
-        <View style={styles.featureItem}>
-          <FontAwesome name="shield" size={24} color="#FFD700" />
-          <Text style={styles.featureTitle}>Quality Guarantee</Text>
-          <Text style={styles.featureText}>Fresh ingredients</Text>
+      {/* Special Offers */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Mzansi Specials</Text>
+        <View style={styles.offerCard}>
+          <View style={styles.offerContent}>
+            <Text style={styles.offerTitle}>Free Delivery!</Text>
+            <Text style={styles.offerText}>
+              Orders over R200 get FREE delivery
+            </Text>
+            <TouchableOpacity style={styles.orderButton}>
+              <Text style={styles.orderButtonText}>Order Now</Text>
+            </TouchableOpacity>
+          </View>
+          <Image
+            source={{ uri: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400' }}
+            style={styles.offerImage}
+          />
         </View>
       </View>
 
-      <TouchableOpacity 
-        style={styles.menuButton}
-        onPress={() => router.push('/menu')}
-        activeOpacity={0.6}
-      >
-        <FontAwesome name="cutlery" size={20} color="#1a1a1a" />
-        <Text style={styles.menuButtonText}>Browse Full Menu</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.version}>ÉLÉGANCE v1.0.0</Text>
+      {/* Quick Actions */}
+      <View style={styles.quickActions}>
+        <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/bookings')}>
+          <FontAwesome name="calendar" size={24} color="#FFD700" />
+          <Text style={styles.actionText}>Book Table</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/orders')}>
+          <FontAwesome name="history" size={24} color="#FFD700" />
+          <Text style={styles.actionText}>My Orders</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/settings')}>
+          <FontAwesome name="cog" size={24} color="#FFD700" />
+          <Text style={styles.actionText}>Settings</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1a1a1a' },
-  header: { 
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingTop: 50, paddingBottom: 20 
+  container: {
+    flex: 1,
+    backgroundColor: '#1a1a1a',
   },
-  greeting: { fontSize: 24, fontWeight: 'bold', color: '#FFFFFF' },
-  location: { fontSize: 14, color: '#FFD700', marginTop: 4 },
-  profileButton: { 
-    width: 44, height: 44, borderRadius: 22, 
-    backgroundColor: '#2d2d2d', justifyContent: 'center', alignItems: 'center' 
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
-  searchContainer: { paddingHorizontal: 20, marginBottom: 20 },
-  searchBar: { 
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#2d2d2d',
-    paddingHorizontal: 15, paddingVertical: 12, borderRadius: 10,
-    borderWidth: 1, borderColor: '#444' 
+  welcomeText: {
+    color: '#fff',
+    fontSize: 16,
+    opacity: 0.8,
   },
-  searchText: { marginLeft: 10, fontSize: 16, color: '#999', flex: 1 },
-  section: { paddingHorizontal: 20, marginBottom: 25 },
-  categoriesContainer: { paddingRight: 20 },
-  sectionHeader: { 
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', marginBottom: 15 
+  restaurantName: {
+    color: '#FFD700',
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginTop: 4,
   },
-  sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFFFFF' },
-  seeAll: { fontSize: 14, color: '#FFD700', fontWeight: '600' },
-  categoryCard: { alignItems: 'center', marginRight: 20, width: 80 },
-  categoryIcon: { 
-    width: 70, height: 70, borderRadius: 35, backgroundColor: '#2d2d2d',
-    justifyContent: 'center', alignItems: 'center', marginBottom: 8,
-    borderWidth: 2, borderColor: '#444' 
+  slogan: {
+    color: '#fff',
+    fontSize: 14,
+    opacity: 0.7,
+    marginTop: 2,
   },
-  categoryEmoji: { fontSize: 30 },
-  categoryName: { fontSize: 14, fontWeight: '600', color: '#FFFFFF', textAlign: 'center' },
-  foodCard: { 
-    flexDirection: 'row', backgroundColor: '#2d2d2d', borderRadius: 12,
-    marginBottom: 15, padding: 12, borderWidth: 1, borderColor: '#444' 
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2d2d2d',
+    marginHorizontal: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginBottom: 24,
   },
-  foodImage: { width: 100, height: 100, borderRadius: 8 },
-  foodInfo: { flex: 1, marginLeft: 15, justifyContent: 'space-between' },
-  foodName: { fontSize: 16, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 4 },
-  foodDescription: { fontSize: 14, color: '#999', marginBottom: 10, lineHeight: 18 },
-  foodFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  foodPrice: { fontSize: 18, fontWeight: 'bold', color: '#FFD700' },
-  addButton: { backgroundColor: '#FFD700', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 8 },
-  addButtonText: { color: '#1a1a1a', fontSize: 14, fontWeight: 'bold' },
-  features: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 20 },
-  featureItem: { 
-    flex: 1, backgroundColor: '#2d2d2d', padding: 20, borderRadius: 12,
-    marginHorizontal: 5, alignItems: 'center', borderWidth: 1, borderColor: '#444' 
+  searchText: {
+    color: '#999',
+    fontSize: 16,
+    marginLeft: 12,
   },
-  featureTitle: { fontSize: 16, fontWeight: 'bold', color: '#FFFFFF', marginTop: 10, marginBottom: 4 },
-  featureText: { fontSize: 14, color: '#999', textAlign: 'center' },
-  menuButton: { 
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#FFD700', marginHorizontal: 20, marginBottom: 20,
-    paddingVertical: 16, borderRadius: 12, gap: 10 
+  section: {
+    marginBottom: 32,
+    paddingHorizontal: 20,
   },
-  menuButtonText: { color: '#1a1a1a', fontSize: 16, fontWeight: 'bold' },
-  version: { textAlign: 'center', color: '#666', fontSize: 12, paddingVertical: 30 },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  seeAll: {
+    color: '#FFD700',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  categoryCard: {
+    alignItems: 'center',
+    backgroundColor: '#2d2d2d',
+    padding: 16,
+    borderRadius: 12,
+    marginRight: 12,
+    minWidth: 80,
+  },
+  categoryIcon: {
+    fontSize: 28,
+    marginBottom: 8,
+  },
+  categoryName: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  foodCard: {
+    backgroundColor: '#2d2d2d',
+    borderRadius: 16,
+    marginRight: 16,
+    width: 220,
+    overflow: 'hidden',
+  },
+  foodImage: {
+    width: '100%',
+    height: 140,
+  },
+  foodInfo: {
+    padding: 16,
+  },
+  foodName: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  foodDescription: {
+    color: '#999',
+    fontSize: 14,
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  foodFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  foodPrice: {
+    color: '#FFD700',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  addButton: {
+    backgroundColor: '#FFD700',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  offerCard: {
+    backgroundColor: '#2d2d2d',
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  offerContent: {
+    flex: 1,
+  },
+  offerTitle: {
+    color: '#FFD700',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  offerText: {
+    color: '#fff',
+    fontSize: 14,
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  orderButton: {
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  orderButtonText: {
+    color: '#1a1a1a',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  offerImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+    marginLeft: 16,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    paddingTop: 20,
+  },
+  actionButton: {
+    alignItems: 'center',
+  },
+  actionText: {
+    color: '#fff',
+    fontSize: 12,
+    marginTop: 8,
+  },
 });

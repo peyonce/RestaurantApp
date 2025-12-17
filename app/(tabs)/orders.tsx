@@ -5,7 +5,8 @@ import {
   StyleSheet, 
   ScrollView, 
   TouchableOpacity,
-  Image 
+  Image,
+  ActivityIndicator
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -14,112 +15,200 @@ export default function OrdersScreen() {
   const orders = [
     {
       id: '1',
-      restaurant: 'Le Gourmet Français',
+      restaurant: 'Mzansi Meals',
       date: '2024-01-15',
-      total: 89.97,
+      total: 189.97,
       status: 'Delivered',
-      items: ['Truffle Burger', 'Craft Cocktail', 'Chocolate Lava Cake'],
+      items: [
+        { name: 'Boerewors Burger', quantity: 1, price: 89.99 },
+        { name: 'Pap & Sheba', quantity: 1, price: 45.99 },
+        { name: 'Rooibos Iced Tea', quantity: 2, price: 65.98 }
+      ]
     },
     {
       id: '2',
-      restaurant: 'Sakura Sushi',
+      restaurant: 'Mzansi Meals',
       date: '2024-01-10',
-      total: 64.50,
+      total: 125.99,
       status: 'Delivered',
-      items: ['Salmon Sushi Platter', 'Green Tea'],
+      items: [
+        { name: 'Bobotie Bowl', quantity: 1, price: 125.99 }
+      ]
     },
     {
       id: '3',
-      restaurant: 'La Pasta Fresca',
+      restaurant: 'Mzansi Meals',
       date: '2024-01-05',
-      total: 42.99,
-      status: 'Cancelled',
-      items: ['Truffle Pasta'],
+      total: 265.97,
+      status: 'Preparing',
+      items: [
+        { name: 'Braai Platter', quantity: 1, price: 189.99 },
+        { name: 'Koeksisters', quantity: 2, price: 57.98 },
+        { name: 'Chakalaka Salad', quantity: 1, price: 38.99 }
+      ]
     },
+    {
+      id: '4',
+      restaurant: 'Mzansi Meals',
+      date: '2024-01-02',
+      total: 85.99,
+      status: 'Cancelled',
+      items: [
+        { name: 'Bunny Chow Burger', quantity: 1, price: 85.99 }
+      ]
+    }
   ];
 
+  const formatCurrency = (amount: number) => {
+    return `R${amount.toFixed(2)}`;
+  };
+
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Delivered': return '#4CAF50';
-      case 'Preparing': return '#FF9800';
-      case 'Cancelled': return '#F44336';
+    switch (status.toLowerCase()) {
+      case 'delivered': return '#4CAF50';
+      case 'preparing': return '#FFA000';
+      case 'on the way': return '#2196F3';
+      case 'cancelled': return '#F44336';
       default: return '#999';
     }
   };
 
+  const getStatusIcon = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'delivered': return 'check-circle';
+      case 'preparing': return 'clock-o';
+      case 'on the way': return 'motorcycle';
+      case 'cancelled': return 'times-circle';
+      default: return 'question-circle';
+    }
+  };
+
+  const handleOrderPress = (orderId: string) => {
+    router.push(`/order-details/${orderId}`);
+  };
+
+  const handleReorder = (order: any) => {
+    // In a real app, this would re-add items to cart
+    alert(`Reordering from ${order.restaurant} - ${formatCurrency(order.total)}`);
+  };
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>My Orders</Text>
-        <Text style={styles.subtitle}>Track your orders and history</Text>
+        <Text style={styles.headerTitle}>Mzansi Meals Orders</Text>
+        <Text style={styles.headerSubtitle}>Your South African food journey</Text>
       </View>
 
-      {/* Order List */}
-      <View style={styles.ordersContainer}>
-        {orders.map((order) => (
-          <TouchableOpacity 
-            key={order.id} 
-            style={styles.orderCard}
-            onPress={() => router.push(`/order-details/${order.id}`)}
-          >
-            <View style={styles.orderHeader}>
-              <View>
-                <Text style={styles.restaurantName}>{order.restaurant}</Text>
-                <Text style={styles.orderDate}>{order.date}</Text>
-              </View>
-              <View style={styles.orderTotalContainer}>
-                <Text style={styles.orderTotal}>${order.total.toFixed(2)}</Text>
-              </View>
-            </View>
-
-            <View style={styles.orderItems}>
-              <FontAwesome name="shopping-bag" size={16} color="#999" />
-              <Text style={styles.itemsText}>
-                {order.items.join(', ')}
-              </Text>
-            </View>
-
-            <View style={styles.orderFooter}>
-              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '20' }]}>
-                <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
-                  {order.status}
-                </Text>
-              </View>
-              <TouchableOpacity style={styles.reorderButton}>
-                <FontAwesome name="repeat" size={14} color="#FFD700" />
-                <Text style={styles.reorderText}>Reorder</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Empty State (if no orders) */}
-      {orders.length === 0 && (
+      {orders.length === 0 ? (
         <View style={styles.emptyState}>
-          <FontAwesome name="shopping-bag" size={64} color="#444" />
+          <FontAwesome name="history" size={80} color="#666" />
           <Text style={styles.emptyTitle}>No orders yet</Text>
           <Text style={styles.emptyText}>
-            Your order history will appear here after you place an order
+            Your Mzansi Meals orders will appear here. Time for some South African flavor!
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.browseButton}
-            onPress={() => router.push('/(tabs)/home')}
+            onPress={() => router.push('/menu')}
           >
-            <Text style={styles.browseButtonText}>Browse Menu</Text>
+            <Text style={styles.browseButtonText}>Order from Mzansi Meals</Text>
           </TouchableOpacity>
         </View>
-      )}
+      ) : (
+        <ScrollView 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.statsCard}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{orders.length}</Text>
+              <Text style={styles.statLabel}>Total Orders</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>
+                {orders.filter(o => o.status === 'Delivered').length}
+              </Text>
+              <Text style={styles.statLabel}>Completed</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>
+                {formatCurrency(orders.reduce((sum, order) => sum + order.total, 0))}
+              </Text>
+              <Text style={styles.statLabel}>Total Spent</Text>
+            </View>
+          </View>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Need help with an order?</Text>
-        <TouchableOpacity>
-          <Text style={styles.contactSupport}>Contact Support</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          <Text style={styles.sectionTitle}>Recent Orders</Text>
+          
+          {orders.map((order) => (
+            <TouchableOpacity
+              key={order.id}
+              style={styles.orderCard}
+              onPress={() => handleOrderPress(order.id)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.orderHeader}>
+                <View>
+                  <Text style={styles.orderId}>Order #{order.id}</Text>
+                  <Text style={styles.orderDate}>{order.date}</Text>
+                </View>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '20' }]}>
+                  <FontAwesome 
+                    name={getStatusIcon(order.status)} 
+                    size={14} 
+                    color={getStatusColor(order.status)} 
+                    style={styles.statusIcon}
+                  />
+                  <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
+                    {order.status}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.orderItems}>
+                {order.items.slice(0, 2).map((item, index) => (
+                  <View key={index} style={styles.orderItem}>
+                    <Text style={styles.itemName}>{item.name}</Text>
+                    <Text style={styles.itemQuantity}>×{item.quantity}</Text>
+                  </View>
+                ))}
+                {order.items.length > 2 && (
+                  <Text style={styles.moreItems}>+{order.items.length - 2} more items</Text>
+                )}
+              </View>
+
+              <View style={styles.orderFooter}>
+                <Text style={styles.orderTotal}>{formatCurrency(order.total)}</Text>
+                <TouchableOpacity
+                  style={styles.reorderButton}
+                  onPress={() => handleReorder(order)}
+                >
+                  <FontAwesome name="repeat" size={16} color="#FFD700" />
+                  <Text style={styles.reorderText}>Reorder</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          ))}
+
+          <TouchableOpacity style={styles.viewAllButton}>
+            <Text style={styles.viewAllText}>View All Orders</Text>
+            <FontAwesome name="arrow-right" size={16} color="#FFD700" />
+          </TouchableOpacity>
+
+          <View style={styles.helpCard}>
+            <FontAwesome name="question-circle" size={24} color="#FFD700" />
+            <View style={styles.helpContent}>
+              <Text style={styles.helpTitle}>Need help with an order?</Text>
+              <Text style={styles.helpText}>
+                Contact Mzansi Meals support at +27 11 123 4567
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      )}
+    </View>
   );
 }
 
@@ -129,153 +218,214 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a1a',
   },
   header: {
-    paddingTop: 60,
+    paddingTop: 70,
     paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingBottom: 20,
     backgroundColor: '#2d2d2d',
-    borderBottomWidth: 1,
-    borderBottomColor: '#444',
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#FFD700',
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#999',
-  },
-  ordersContainer: {
-    padding: 20,
-  },
-  orderCard: {
-    backgroundColor: '#2d2d2d',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#444',
-  },
-  orderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 15,
-  },
-  restaurantName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 5,
-  },
-  orderDate: {
-    fontSize: 14,
-    color: '#999',
-  },
-  orderTotalContainer: {
-    backgroundColor: '#1a1a1a',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#444',
-  },
-  orderTotal: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFD700',
-  },
-  orderItems: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#444',
-  },
-  itemsText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#999',
-    marginLeft: 10,
-    lineHeight: 20,
-  },
-  orderFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  reorderButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.3)',
-    gap: 6,
-  },
-  reorderText: {
-    color: '#FFD700',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  emptyState: {
-    alignItems: 'center',
-    padding: 40,
-    marginTop: 20,
-  },
-  emptyTitle: {
+  headerTitle: {
+    color: '#fff',
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+  },
+  headerSubtitle: {
+    color: '#999',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyTitle: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
     marginTop: 20,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   emptyText: {
-    fontSize: 16,
     color: '#999',
+    fontSize: 16,
     textAlign: 'center',
-    marginBottom: 30,
     lineHeight: 24,
+    marginBottom: 30,
   },
   browseButton: {
     backgroundColor: '#FFD700',
     paddingHorizontal: 30,
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: 15,
+    borderRadius: 12,
   },
   browseButtonText: {
     color: '#1a1a1a',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  footer: {
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  statsCard: {
+    flexDirection: 'row',
+    backgroundColor: '#2d2d2d',
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 20,
+    marginBottom: 24,
+  },
+  statItem: {
+    flex: 1,
     alignItems: 'center',
-    padding: 30,
+  },
+  statValue: {
+    color: '#FFD700',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  statLabel: {
+    color: '#999',
+    fontSize: 12,
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: '#444',
+    marginHorizontal: 10,
+  },
+  sectionTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  orderCard: {
+    backgroundColor: '#2d2d2d',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+  },
+  orderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  orderId: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  orderDate: {
+    color: '#999',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  statusIcon: {
+    marginRight: 6,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  orderItems: {
+    marginBottom: 16,
+  },
+  orderItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  itemName: {
+    color: '#fff',
+    fontSize: 14,
+    flex: 1,
+  },
+  itemQuantity: {
+    color: '#999',
+    fontSize: 14,
+    marginLeft: 12,
+  },
+  moreItems: {
+    color: '#FFD700',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  orderFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: '#444',
-    marginTop: 20,
+    paddingTop: 16,
   },
-  footerText: {
-    fontSize: 14,
-    color: '#999',
-    marginBottom: 10,
+  orderTotal: {
+    color: '#FFD700',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
-  contactSupport: {
+  reorderButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFD700',
+  },
+  reorderText: {
     color: '#FFD700',
     fontSize: 14,
     fontWeight: '600',
+    marginLeft: 8,
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2d2d2d',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  viewAllText: {
+    color: '#FFD700',
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  helpCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2d2d2d',
+    borderRadius: 12,
+    padding: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FFD700',
+  },
+  helpContent: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  helpTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  helpText: {
+    color: '#999',
+    fontSize: 14,
   },
 });

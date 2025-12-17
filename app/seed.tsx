@@ -49,7 +49,7 @@ export default function SeedScreen() {
       </Text>
       
       <Button 
-        title={seeding ? "Seeding..." : "Seed Firebase"} 
+        title={seeding ? "Seeding..." : "Seed Mzansi Meals Data"} 
         onPress={handleSeed}
         disabled={seeding}
       />

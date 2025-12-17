@@ -42,7 +42,7 @@ export default function LoginScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Welcome Back</Text>
-        <Text style={styles.subtitle}>Sign in to your account</Text>
+        <Text style={styles.subtitle}>Sign in to Mzansi Meals your account</Text>
       </View>
 
       {/* Form */}
