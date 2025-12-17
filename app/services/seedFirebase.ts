@@ -1,5 +1,5 @@
+import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
 
 // Create sample menu items for Mzansi Meals
 export const seedMenuItems = async () => {
