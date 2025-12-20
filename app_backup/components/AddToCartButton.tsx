@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { TouchableOpacity, Text, Alert, ActivityIndicator, StyleSheet } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { useCart } from '@contexts/CartProvider';
+import { useCart } from '../contexts/CartProvider';
 
 export default function AddToCartButton({ item }: any) {
   const { addToCart } = useCart();

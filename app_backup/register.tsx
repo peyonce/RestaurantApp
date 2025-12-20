@@ -1,6 +1,6 @@
 import { FontAwesome } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
-import React, { useEffect, useState, useRef } from 'react'; // Added useRef
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,7 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useAuth } from '@/contexts/AuthProvider';
+import { useAuth } from './contexts/AuthProvider';
 
 export default function RegisterScreen() {
   const [formData, setFormData] = useState({
@@ -25,8 +25,7 @@ export default function RegisterScreen() {
   });
   const { signUp: register, loading: isLoading, user } = useAuth();
   const [showSuccess, setShowSuccess] = useState(false);
-  const [hasRedirected, setHasRedirected] = useState(false); // NEW: Track redirects
-  const redirectTimeoutRef = useRef<NodeJS.Timeout | null>(null); // NEW: Track timeout
+  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const router = useRouter();
 
   console.log('DEBUG - isLoading:', isLoading);
@@ -37,32 +36,13 @@ export default function RegisterScreen() {
     formData.password && formData.confirmPassword
   );
 
-  // FIXED: Check if user is logged in and redirect (with protection)
+  // Check if user is logged in and redirect
   useEffect(() => {
-    // Only redirect if user exists AND we haven't redirected already
-    if (user && !hasRedirected) {
-      console.log('DEBUG - User detected, will redirect...');
-      setHasRedirected(true);
-      
-      // Clear any existing timeout
-      if (redirectTimeoutRef.current) {
-        clearTimeout(redirectTimeoutRef.current);
-      }
-      
-      // Set a new timeout for redirect
-      redirectTimeoutRef.current = setTimeout(() => {
-        console.log('DEBUG - Redirecting to home...');
-        router.replace('/(tabs)');
-      }, 1000);
+    if (user) {
+      console.log('DEBUG - User detected, redirecting...');
+      router.replace('/');
     }
-    
-    // Cleanup function
-    return () => {
-      if (redirectTimeoutRef.current) {
-        clearTimeout(redirectTimeoutRef.current);
-      }
-    };
-  }, [user, hasRedirected, router]);
+  }, [user]);
 
   const handleSignup = async () => {
     console.log('DEBUG - handleSignup called');
@@ -101,13 +81,13 @@ export default function RegisterScreen() {
       // Show success tick
       setShowSuccess(true);
       
-      // Show success message but don't auto-redirect here
-      // The useEffect will handle the redirect when user state updates
-      Alert.alert('Success', result.message || 'Account created successfully!', [
-        { text: 'OK' }
-      ]);
+      // Show success message
+      Alert.alert('Success', result.message || 'Account created successfully!');
       
-      // DON'T set a redirect timeout here - let the useEffect handle it
+      // Automatically redirect after 2 seconds
+      setTimeout(() => {
+        router.replace('/');
+      }, 2000);
     } else {
       Alert.alert('Signup Failed', result.message || 'Failed to create account');
     }
@@ -120,16 +100,6 @@ export default function RegisterScreen() {
            password === confirmPassword && 
            password.length >= 6;
   };
-
-  // Show loading/redirecting screen
-  if (hasRedirected && user) {
-    return (
-      <View style={styles.loadingScreen}>
-        <ActivityIndicator size="large" color="#FFD700" />
-        <Text style={styles.loadingText}>Welcome to Mzansi! Redirecting...</Text>
-      </View>
-    );
-  }
 
   return (
     <KeyboardAvoidingView 
@@ -212,31 +182,51 @@ export default function RegisterScreen() {
           <TouchableOpacity 
             style={[
               styles.signupButton, 
-              (!isFormValid() || isLoading || showSuccess || hasRedirected) && styles.disabledButton
+              (!isFormValid() || isLoading || showSuccess) && styles.disabledButton
             ]} 
             onPress={handleSignup}
-            disabled={!isFormValid() || isLoading || showSuccess || hasRedirected}
+            disabled={!isFormValid() || isLoading || showSuccess}
           >
             {isLoading ? (
               <ActivityIndicator color="#1a1a1a" />
             ) : showSuccess ? (
               <>
-                <FontAwesome name="check" size={20} color="#1a1a1a" />
-                <Text style={styles.signupButtonText}>Account Created!</Text>
+                <FontAwesome name="check-circle" size={24} color="#1a1a1a" />
+                <Text style={styles.signupButtonText}>Mzansi Meals Account Created!</Text>
               </>
             ) : (
-              <Text style={styles.signupButtonText}>Create Account</Text>
+              <>
+                <Text style={styles.signupButtonText}>
+                  {isFormValid() ? 'Create Mzansi Meals Account' : 'Fill All Fields to Join'}
+                </Text>
+                {isFormValid() && <FontAwesome name="arrow-right" size={20} color="#1a1a1a" />}
+              </>
             )}
           </TouchableOpacity>
 
-          <View style={styles.loginLinkContainer}>
-            <Text style={styles.loginLinkText}>Already have an account? </Text>
-            <Link href="/login" asChild>
-              <TouchableOpacity>
-                <Text style={styles.loginLink}>Sign In</Text>
-              </TouchableOpacity>
-            </Link>
+          {isFormValid() && (
+            <Text style={styles.readyText}>✓ All fields are valid. Press "Create Mzansi Meals Account"</Text>
+          )}
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>Already have an account?</Text>
+            <View style={styles.dividerLine} />
           </View>
+
+          <Link href="/login" asChild>
+            <TouchableOpacity style={styles.loginButton} disabled={isLoading || showSuccess}>
+              <Text style={styles.loginButtonText}>Sign In Instead</Text>
+              <FontAwesome name="sign-in" size={16} color="#FFD700" />
+            </TouchableOpacity>
+          </Link>
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.termsText}>
+            By creating an account, you agree to our Terms of Service and Privacy Policy
+          </Text>
+          <Text style={styles.footerText}>Mzansi Meals Restaurant App</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -250,25 +240,23 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 40,
+    padding: 20,
+    justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
     marginBottom: 40,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#FFD700',
-    textAlign: 'center',
     marginTop: 20,
-    marginBottom: 10,
   },
   subtitle: {
     fontSize: 16,
-    color: '#ccc',
-    textAlign: 'center',
+    color: '#999',
+    marginTop: 10,
   },
   form: {
     width: '100%',
@@ -280,7 +268,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#2d2d2d',
     borderRadius: 10,
     marginBottom: 15,
     paddingHorizontal: 15,
@@ -292,54 +280,79 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
     paddingVertical: 15,
   },
   signupButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#FFD700',
     borderRadius: 10,
-    paddingVertical: 18,
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 25,
-    flexDirection: 'row',
-    justifyContent: 'center',
+    padding: 15,
+    marginTop: 10,
+    gap: 10,
   },
   disabledButton: {
     backgroundColor: '#666',
-    opacity: 0.7,
+    opacity: 0.6,
   },
   signupButtonText: {
     color: '#1a1a1a',
     fontSize: 18,
     fontWeight: 'bold',
-    marginLeft: 10,
   },
-  loginLinkContainer: {
+  readyText: {
+    color: '#4CAF50',
+    textAlign: 'center',
+    marginTop: 10,
+    fontSize: 14,
+  },
+  divider: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
+    marginVertical: 20,
   },
-  loginLinkText: {
-    color: '#ccc',
-    fontSize: 16,
-  },
-  loginLink: {
-    color: '#FFD700',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  loadingScreen: {
+  dividerLine: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    height: 1,
+    backgroundColor: '#444',
   },
-  loadingText: {
+  dividerText: {
+    color: '#999',
+    paddingHorizontal: 10,
+    fontSize: 14,
+  },
+  loginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    borderRadius: 10,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: '#FFD700',
+    gap: 10,
+  },
+  loginButtonText: {
     color: '#FFD700',
-    fontSize: 18,
-    marginTop: 20,
+    fontSize: 16,
     fontWeight: '600',
+  },
+  footer: {
+    alignItems: 'center',
+    marginTop: 40,
+  },
+  termsText: {
+    color: '#666',
+    fontSize: 12,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 18,
+  },
+  footerText: {
+    color: '#FFA000',
+    fontSize: 12,
   },
 });

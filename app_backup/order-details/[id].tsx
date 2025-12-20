@@ -13,7 +13,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 export default function OrderDetailsScreen() {
   const { id } = useLocalSearchParams();
 
-  // Mock order data - WITH MZANSI MEALS BRANDING
+  // Mock order data
   const order = {
     id: id || '1',
     restaurant: 'Mzansi Meals',
@@ -21,29 +21,29 @@ export default function OrderDetailsScreen() {
     time: '19:30',
     total: 89.97,
     status: 'Delivered',
-    deliveryAddress: '123 Vilakazi Street, Orlando West, Johannesburg, Gauteng 2000',
-    paymentMethod: 'Standard Bank Card',
+    deliveryAddress: '123 Main Street, New York, NY 10001',
+    paymentMethod: 'Credit Card ending in 4242',
     items: [
       {
         id: '1',
         name: 'Bunny Chow',
         price: 28.99,
         quantity: 2,
-        image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b',
+        image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd',
       },
       {
         id: '2',
         name: 'Rooibos Tea',
         price: 16.99,
         quantity: 1,
-        image: 'https://images.unsplash.com/photo-1591261730799-ee4e6c2d16d7',
+        image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd',
       },
       {
         id: '3',
         name: 'Melktert',
         price: 12.99,
         quantity: 1,
-        image: 'https://images.unsplash.com/photo-1563729785-e5f1fac3e7bf',
+        image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587',
       },
     ],
     orderNumber: '#ORD-2024-0015',
@@ -122,11 +122,11 @@ export default function OrderDetailsScreen() {
                 <Text style={styles.itemName}>{item.name}</Text>
                 <View style={styles.itemDetails}>
                   <Text style={styles.itemQuantity}>Qty: {item.quantity}</Text>
-                  <Text style={styles.itemPrice}>R{item.price.toFixed(2)} each</Text>
+                  <Text style={styles.itemPrice}>${item.price.toFixed(2)} each</Text>
                 </View>
               </View>
               <Text style={styles.itemTotal}>
-                R{(item.price * item.quantity).toFixed(2)}
+                ${(item.price * item.quantity).toFixed(2)}
               </Text>
             </View>
           ))}
@@ -157,21 +157,21 @@ export default function OrderDetailsScreen() {
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Subtotal</Text>
             <Text style={styles.summaryValue}>
-              R{(order.total - 5.99 - 2.99).toFixed(2)}
+              ${(order.total - 5.99 - 2.99).toFixed(2)}
             </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Delivery Fee</Text>
-            <Text style={styles.summaryValue}>R5.99</Text>
+            <Text style={styles.summaryValue}>$5.99</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Service Fee</Text>
-            <Text style={styles.summaryValue}>R2.99</Text>
+            <Text style={styles.summaryValue}>$2.99</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>R{order.total.toFixed(2)}</Text>
+            <Text style={styles.totalValue}>${order.total.toFixed(2)}</Text>
           </View>
         </View>
 

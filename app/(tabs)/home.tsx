@@ -1,155 +1,119 @@
-import { FontAwesome } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import React from 'react';
-import {
-  Alert,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
-} from 'react-native';
-import { useCart } from '../contexts/CartProvider';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
+import { Link, useRouter } from 'expo-router';
+import { FontAwesome } from '@expo/vector-icons';
+import { useCart } from '@/contexts/CartProvider';
 
-interface Category {
-  id: string;
-  name: string;
-  icon: string;
-}
-
-interface FoodItem {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-}
+// Sample specials data
+const mzansiSpecials = [
+  {
+    id: 'special-1',
+    name: 'Family Feast',
+    description: 'Bunny Chow, Boerewors, Pap & Chakalaka for 4',
+    price: 499.99,
+    image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400',
+    items: [
+      { name: 'Bunny Chow (Large)', quantity: 1 },
+      { name: 'Boerewors Roll', quantity: 4 },
+      { name: 'Pap & Wors', quantity: 2 },
+      { name: 'Chakalaka & Bread', quantity: 1 },
+    ]
+  },
+  {
+    id: 'special-2', 
+    name: 'Braai Bundle',
+    description: 'Everything you need for a proper South African braai',
+    price: 349.99,
+    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&fit=crop',
+    items: [
+      { name: 'Braaied Steak', quantity: 4 },
+      { name: 'Boerewors', quantity: 6 },
+      { name: 'Pap', quantity: 1 },
+      { name: 'Chakalaka', quantity: 1 },
+    ]
+  },
+  {
+    id: 'special-3',
+    name: 'Dessert Platter',
+    description: 'Sweet treats for the whole family',
+    price: 199.99,
+    image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400',
+    items: [
+      { name: 'Melktert', quantity: 1 },
+      { name: 'Koeksister', quantity: 6 },
+      { name: 'Malva Pudding', quantity: 1 },
+    ]
+  }
+];
 
 export default function HomeScreen() {
+  const router = useRouter();
   const { addToCart } = useCart();
 
-  const categories: Category[] = [
-    { id: '1', name: 'Burgers', icon: '🍔' },
-    { id: '2', name: 'Braai', icon: '🔥' },
-    { id: '3', name: 'Mains', icon: '🍛' },
-    { id: '4', name: 'Sides', icon: '🍟' },
-    { id: '5', name: 'Drinks', icon: '🥤' },
-    { id: '6', name: 'Desserts', icon: '🍰' },
-  ];
-
-  const popularItems: FoodItem[] = [
-    {
-      id: '1',
-      name: 'Boerewors Burger',
-      description: 'Traditional SA sausage with chakalaka relish',
-      price: 89.99,
-      image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400',
-    },
-    {
-      id: '2',
-      name: 'Braai Platter',
-      description: 'Mixed grill with boerewors, steak and pap',
-      price: 189.99,
-      image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w-400',
-    },
-    {
-      id: '3',
-      name: 'Bobotie Bowl',
-      description: 'Cape Malay minced meat bake with yellow rice',
-      price: 125.99,
-      image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400',
-    },
-    {
-      id: '4',
-      name: 'Koeksisters',
-      description: 'Traditional syrup-coated doughnuts',
-      price: 28.99,
-      image: 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=400',
-    },
-  ];
-
-  const handleAddToCart = (item: FoodItem) => {
+  const handleOrderSpecial = (special: typeof mzansiSpecials[0]) => {
+    console.log('🎯 Ordering special:', special.name);
+    
+    // Add the entire special as ONE cart item with the correct price
     addToCart({
-      menuItemId: item.id,
-      name: item.name,
-      price: item.price,
-      quantity: 1,
-      image: item.image,
-      imageUrl: item.image
+      id: special.id,
+      name: special.name + " (Bundle)",
+      price: special.price,
+      image: special.image,
+      quantity: 1
     });
-    Alert.alert('Added!', `${item.name} added to cart`);
-  };
-
-  const handleCategoryPress = (category: Category) => {
-    router.push(`/menu?category=${category.name}`);
+    
+    // Navigate to cart
+    router.push('/(tabs)/cart');
   };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.welcomeText}>Welcome to</Text>
-          <Text style={styles.restaurantName}>Mzansi Meals</Text>
-          <Text style={styles.slogan}>Taste the Rainbow Nation 🇿🇦</Text>
-        </View>
-        <TouchableOpacity onPress={() => router.push('/profile')}>
-          <FontAwesome name="user-circle" size={40} color="#FFD700" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Search Bar */}
-      <TouchableOpacity 
-        style={styles.searchBar}
-        onPress={() => router.push('/menu')}
-      >
-        <FontAwesome name="search" size={20} color="#999" />
-        <Text style={styles.searchText}>Search Mzansi dishes...</Text>
-      </TouchableOpacity>
-
-      {/* Categories */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Categories</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category.id}
-              style={styles.categoryCard}
-              onPress={() => handleCategoryPress(category)}
-            >
-              <Text style={styles.categoryIcon}>{category.icon}</Text>
-              <Text style={styles.categoryName}>{category.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Popular Items */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Popular Now</Text>
-          <TouchableOpacity onPress={() => router.push('/menu')}>
-            <Text style={styles.seeAll}>See All</Text>
+      {/* Hero Section */}
+      <View style={styles.hero}>
+        <Image
+          source={{ uri: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200' }}
+          style={styles.heroImage}
+        />
+        <View style={styles.heroOverlay}>
+          <Text style={styles.heroTitle}>Mzansi Meals</Text>
+          <Text style={styles.heroSubtitle}>Authentic South African Cuisine Delivered</Text>
+          <TouchableOpacity 
+            style={styles.heroButton}
+            onPress={() => Alert.alert('Braai Specials', 'Our braai menu is coming soon! For now, check out our Mzansi Specials above.')}
+          >
+            <Text style={styles.heroButtonText}>Order Now</Text>
           </TouchableOpacity>
         </View>
+      </View>
+
+      {/* Mzansi Specials */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Mzansi Specials</Text>
+        <Text style={styles.sectionSubtitle}>Curated bundles for the ultimate South African experience</Text>
         
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {popularItems.map((item) => (
-            <View key={item.id} style={styles.foodCard}>
-              <Image source={{ uri: item.image }} style={styles.foodImage} />
-              <View style={styles.foodInfo}>
-                <Text style={styles.foodName}>{item.name}</Text>
-                <Text style={styles.foodDescription} numberOfLines={2}>
-                  {item.description}
-                </Text>
-                <View style={styles.foodFooter}>
-                  <Text style={styles.foodPrice}>R{item.price.toFixed(2)}</Text>
-                  <TouchableOpacity
-                    style={styles.addButton}
-                    onPress={() => handleAddToCart(item)}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.specialsScroll}>
+          {mzansiSpecials.map((special) => (
+            <View key={special.id} style={styles.specialCard}>
+              <Image source={{ uri: special.image }} style={styles.specialImage} />
+              <View style={styles.specialContent}>
+                <Text style={styles.specialName}>{special.name}</Text>
+                <Text style={styles.specialDescription}>{special.description}</Text>
+                
+                <View style={styles.specialItems}>
+                  {special.items.map((item, index) => (
+                    <Text key={index} style={styles.specialItem}>
+                      • {item.quantity}x {item.name}
+                    </Text>
+                  ))}
+                </View>
+                
+                <View style={styles.specialFooter}>
+                  <Text style={styles.specialPrice}>R {special.price.toFixed(2)}</Text>
+                  <TouchableOpacity 
+                    style={styles.specialButton}
+                    onPress={() => handleOrderSpecial(special)}
                   >
-                    <FontAwesome name="plus" size={16} color="#1a1a1a" />
+                    <Text style={styles.specialButtonText}>Add to Cart</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -158,42 +122,41 @@ export default function HomeScreen() {
         </ScrollView>
       </View>
 
-      {/* Special Offers */}
+      {/* Featured Categories */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Mzansi Specials</Text>
-        <View style={styles.offerCard}>
-          <View style={styles.offerContent}>
-            <Text style={styles.offerTitle}>Free Delivery!</Text>
-            <Text style={styles.offerText}>
-              Orders over R200 get FREE delivery
-            </Text>
-            <TouchableOpacity style={styles.orderButton}>
-              <Text style={styles.orderButtonText}>Order Now</Text>
-            </TouchableOpacity>
-          </View>
-          <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400' }}
-            style={styles.offerImage}
-          />
+        <Text style={styles.sectionTitle}>Featured Categories</Text>
+        
+        <View style={styles.categories}>
+          <TouchableOpacity 
+            style={styles.categoryCard}
+            onPress={() => Alert.alert('Braai Specials', 'Our braai menu is coming soon! For now, check out our Mzansi Specials above.')}
+          >
+            <View style={[styles.categoryIcon, { backgroundColor: '#8B4513' }]}>
+              <FontAwesome name="fire" size={30} color="#FFD700" />
+            </View>
+            <Text style={styles.categoryName}>Braai Specials</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.categoryCard}
+            onPress={() => Alert.alert('Braai Specials', 'Our braai menu is coming soon! For now, check out our Mzansi Specials above.')}
+          >
+            <View style={[styles.categoryIcon, { backgroundColor: '#D2691E' }]}>
+              <FontAwesome name="birthday-cake" size={30} color="#FFD700" />
+            </View>
+            <Text style={styles.categoryName}>Desserts</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.categoryCard}
+            onPress={() => Alert.alert('Braai Specials', 'Our braai menu is coming soon! For now, check out our Mzansi Specials above.')}
+          >
+            <View style={[styles.categoryIcon, { backgroundColor: '#228B22' }]}>
+              <FontAwesome name="glass" size={30} color="#FFD700" />
+            </View>
+            <Text style={styles.categoryName}>Drinks</Text>
+          </TouchableOpacity>
         </View>
-      </View>
-
-      {/* Quick Actions */}
-      <View style={styles.quickActions}>
-        <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/bookings')}>
-          <FontAwesome name="calendar" size={24} color="#FFD700" />
-          <Text style={styles.actionText}>Book Table</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/orders')}>
-          <FontAwesome name="history" size={24} color="#FFD700" />
-          <Text style={styles.actionText}>My Orders</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/settings')}>
-          <FontAwesome name="cog" size={24} color="#FFD700" />
-          <Text style={styles.actionText}>Settings</Text>
-        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -204,180 +167,176 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1a1a1a',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+  hero: {
+    height: 400,
+    position: 'relative',
   },
-  welcomeText: {
-    color: '#fff',
-    fontSize: 16,
-    opacity: 0.8,
-  },
-  restaurantName: {
-    color: '#FFD700',
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginTop: 4,
-  },
-  slogan: {
-    color: '#fff',
-    fontSize: 14,
-    opacity: 0.7,
-    marginTop: 2,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2d2d2d',
-    marginHorizontal: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    marginBottom: 24,
-  },
-  searchText: {
-    color: '#999',
-    fontSize: 16,
-    marginLeft: 12,
-  },
-  section: {
-    marginBottom: 32,
-    paddingHorizontal: 20,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  seeAll: {
-    color: '#FFD700',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  categoryCard: {
-    alignItems: 'center',
-    backgroundColor: '#2d2d2d',
-    padding: 16,
-    borderRadius: 12,
-    marginRight: 12,
-    minWidth: 80,
-  },
-  categoryIcon: {
-    fontSize: 28,
-    marginBottom: 8,
-  },
-  categoryName: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  foodCard: {
-    backgroundColor: '#2d2d2d',
-    borderRadius: 16,
-    marginRight: 16,
-    width: 220,
-    overflow: 'hidden',
-  },
-  foodImage: {
+  heroImage: {
     width: '100%',
-    height: 140,
+    height: '100%',
   },
-  foodInfo: {
-    padding: 16,
+  heroOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    padding: 30,
   },
-  foodName: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  foodDescription: {
-    color: '#999',
-    fontSize: 14,
-    marginBottom: 12,
-    lineHeight: 18,
-  },
-  foodFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  foodPrice: {
+  heroTitle: {
     color: '#FFD700',
+    fontSize: 36,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  heroSubtitle: {
+    color: '#fff',
+    fontSize: 18,
+    marginBottom: 20,
+  },
+  heroButton: {
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+  },
+  heroButtonText: {
+    color: '#1a1a1a',
     fontSize: 18,
     fontWeight: 'bold',
   },
-  addButton: {
-    backgroundColor: '#FFD700',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+  section: {
+    paddingHorizontal: 20,
+    paddingVertical: 30,
   },
-  offerCard: {
-    backgroundColor: '#2d2d2d',
-    borderRadius: 16,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  offerContent: {
-    flex: 1,
-  },
-  offerTitle: {
+  sectionTitle: {
     color: '#FFD700',
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  sectionSubtitle: {
+    color: '#ccc',
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  specialsScroll: {
+    marginHorizontal: -20,
+  },
+  specialCard: {
+    width: 300,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 15,
+    marginRight: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  specialImage: {
+    width: '100%',
+    height: 150,
+  },
+  specialContent: {
+    padding: 20,
+  },
+  specialName: {
+    color: '#fff',
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 5,
   },
-  offerText: {
-    color: '#fff',
+  specialDescription: {
+    color: '#ccc',
     fontSize: 14,
-    marginBottom: 16,
+    marginBottom: 15,
     lineHeight: 20,
   },
-  orderButton: {
+  specialItems: {
+    marginBottom: 15,
+  },
+  specialItem: {
+    color: '#999',
+    fontSize: 12,
+    marginBottom: 3,
+  },
+  specialFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  specialPrice: {
+    color: '#FFD700',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  specialButton: {
     backgroundColor: '#FFD700',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
-    alignSelf: 'flex-start',
   },
-  orderButtonText: {
+  specialButtonText: {
     color: '#1a1a1a',
     fontSize: 14,
     fontWeight: 'bold',
   },
-  offerImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 12,
-    marginLeft: 16,
-  },
-  quickActions: {
+  stepsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    paddingTop: 20,
+    justifyContent: 'space-between',
+    marginTop: 20,
   },
-  actionButton: {
+  step: {
+    flex: 1,
     alignItems: 'center',
+    paddingHorizontal: 10,
   },
-  actionText: {
+  stepIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#2a2a2a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+    borderWidth: 2,
+    borderColor: '#FFD700',
+  },
+  stepTitle: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5,
+    textAlign: 'center',
+  },
+  stepDescription: {
+    color: '#999',
     fontSize: 12,
-    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  categories: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  categoryCard: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  categoryIcon: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  categoryName: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

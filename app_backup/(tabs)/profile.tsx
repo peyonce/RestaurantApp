@@ -1,10 +1,10 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert, Modal, TextInput, Switch, ActivityIndicator } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { onAuthStateChanged, signOut, updateEmail, updateProfile } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { auth, db } from '../config/firebase';
+import { signOut, updateProfile, updateEmail, onAuthStateChanged } from 'firebase/auth';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
 
 export default function ProfileScreen() {
   const [showPayment, setShowPayment] = useState(false);

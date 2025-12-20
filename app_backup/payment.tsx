@@ -10,11 +10,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
-import { useCart } from '../contexts/CartProvider';
-import { useAuth } from '../contexts/AuthProvider';
+import { useCart } from './contexts/CartProvider';
+import { useAuth } from './contexts/AuthProvider';
 import { FontAwesome } from '@expo/vector-icons';
 // Note: Commented out Firebase imports for now since we're using mock data
-// import { createOrder, createUserProfile, updateUserProfile, getUserProfile } from '../services/database';
+// import { createOrder, createUserProfile, updateUserProfile, getUserProfile } from './services/database';
 
 export default function PaymentScreen() {
   const { items, total, clearCart } = useCart();

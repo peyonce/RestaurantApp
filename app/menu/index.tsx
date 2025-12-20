@@ -1,323 +1,232 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  FlatList, 
+  Image, 
+  TouchableOpacity, 
   TextInput,
-  FlatList,
+  Alert
 } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 
-// Menu categories
-const categories = ['All', 'Burgers', 'Drinks', 'Meat', 'Desserts'];
-
-// Menu items - South African cuisine for Mzansi Meals
+// SIMPLEST POSSIBLE VERSION - NO external dependencies
 const menuItems = [
   {
     id: '1',
     name: 'Bunny Chow',
-    price: 28.99,
-    description: 'Hollowed-out bread loaf filled with curry',
-    image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b',
-    category: 'burgers',
+    price: 129.99,
+    image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400',
   },
   {
-    id: '2',
+    id: '2', 
     name: 'Boerewors Roll',
-    price: 22.99,
-    description: 'Grilled boerewors sausage in a fresh roll',
-    image: 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9',
-    category: 'burgers',
-  },
-  {
-    id: '3',
-    name: 'Chakalaka Burger',
-    price: 24.99,
-    description: 'Burger with spicy South African relish',
-    image: 'https://placehold.co/400x300/8B4513/FFFFFF?text=Chakalaka+Burger',
-    category: 'burgers',
-  },
-  {
-    id: '4',
-    name: 'Rooibos Tea',
-    price: 16.99,
-    description: 'Traditional South African herbal tea',
-    image: 'https://images.unsplash.com/photo-1591261730799-ee4e6c2d16d7',
-    category: 'drinks',
-  },
-  {
-    id: '5',
-    name: 'Magoenyana (Sorghum Beer)',
-    price: 8.99,
-    description: 'Traditional sorghum-based African beer',
-    image: 'https://images.unsplash.com/photo-1621506289937-a8e4df240d0b',
-    category: 'drinks',
-  },
-  {
-    id: '6',
-    name: 'Umqombothi',
-    price: 12.99,
-    description: 'Traditional African maize beer',
-    image: 'https://placehold.co/400x300/FFD700/000000?text=Umqombothi',
-    category: 'drinks',
-  },
-  {
-    id: '7',
-    name: 'Braaied Steak',
-    price: 32.99,
-    description: 'Steak prepared on traditional braai',
-    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d',
-    category: 'meat',
-  },
-  {
-    id: '8',
-    name: 'Braaied Ribs',
-    price: 26.99,
-    description: 'Ribs prepared on traditional braai',
-    image: 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba',
-    category: 'meat',
-  },
-  {
-    id: '9',
-    name: 'Melktert',
-    price: 14.99,
-    description: 'South African milk tart dessert',
-    image: 'https://images.unsplash.com/photo-1563729785-e5f1fac3e7bf',
-    category: 'desserts',
-  },
-  {
-    id: '10',
-    name: 'Koeksister',
-    price: 13.99,
-    description: 'South African sweet, syrup-coated doughnut',
-    image: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad',
-    category: 'desserts',
+    price: 89.99,
+    image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400',
   },
 ];
 
 export default function MenuScreen() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
   const router = useRouter();
+  const [testLog, setTestLog] = useState('No clicks yet');
 
-  const filteredItems = menuItems.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         item.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory.toLowerCase();
-    return matchesSearch && matchesCategory;
-  });
+  // ULTRA-SIMPLE handlers with immediate feedback
+  const handleBack = () => {
+    console.log('🔙 BACK button CLICKED at:', new Date().toISOString());
+    setTestLog('Back button clicked at ' + new Date().toLocaleTimeString());
+    setTimeout(() => {
+      router.back();
+    }, 100);
+  };
 
-  const renderMenuItem = ({ item }: { item: typeof menuItems[0] }) => (
-    <Link href={`/menu/${item.id}`} asChild>
-      <TouchableOpacity style={styles.menuItem}>
-        <Image source={{ uri: item.image }} style={styles.itemImage} />
-        <View style={styles.itemInfo}>
-          <Text style={styles.itemName}>{item.name}</Text>
-          <Text style={styles.itemDescription} numberOfLines={2}>
-            {item.description}
-          </Text>
-          <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
-        </View>
-        <FontAwesome name="chevron-right" size={16} color="#999" />
-      </TouchableOpacity>
-    </Link>
-  );
+  const handleAddToCart = (itemName) => {
+    console.log('🛒 ADD TO CART clicked for:', itemName, 'at', new Date().toISOString());
+    setTestLog(`Added ${itemName} at ` + new Date().toLocaleTimeString());
+    Alert.alert('Success!', `Added ${itemName} to cart`);
+  };
+
+  const handleTestDirect = () => {
+    console.log('🎯 DIRECT TEST button clicked at:', new Date().toISOString());
+    setTestLog('Test button clicked at ' + new Date().toLocaleTimeString());
+    Alert.alert('Direct Test', 'This button works directly!');
+  };
+
+  console.log('🔄 MenuScreen rendered at:', new Date().toISOString());
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Mzansi Meals Menu</Text>
-        <Text style={styles.headerSubtitle}>Authentic South African Cuisine</Text>
+      {/* TEST PANEL - These MUST work if React Native works */}
+      <View style={styles.testPanel}>
+        <Text style={styles.testTitle}>TOUCH TEST PANEL</Text>
+        <Text style={styles.testLog}>Last action: {testLog}</Text>
+        
+        <TouchableOpacity 
+          style={[styles.testButton, {backgroundColor: '#FF0000'}]}
+          onPress={handleTestDirect}
+          activeOpacity={0.3}
+          hitSlop={{top: 20, bottom: 20, left: 20, right: 20}}
+        >
+          <Text style={styles.testButtonText}>🔴 TEST DIRECT</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.testButton, {backgroundColor: '#00FF00'}]}
+          onPress={handleBack}
+          activeOpacity={0.3}
+          hitSlop={{top: 20, bottom: 20, left: 20, right: 20}}
+        >
+          <Text style={styles.testButtonText}>🟢 GO BACK</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <FontAwesome name="search" size={20} color="#999" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search menu items..."
-          placeholderTextColor="#999"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <FontAwesome name="times-circle" size={20} color="#999" />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Categories */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.categoriesContainer}
-      >
-        {categories.map((category) => (
-          <TouchableOpacity
-            key={category}
-            style={[
-              styles.categoryButton,
-              selectedCategory === category && styles.categoryButtonActive,
-            ]}
-            onPress={() => setSelectedCategory(category)}
-          >
-            <Text
-              style={[
-                styles.categoryText,
-                selectedCategory === category && styles.categoryTextActive,
-              ]}
-            >
-              {category}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Menu Items */}
+      {/* SIMPLE MENU ITEMS */}
+      <Text style={styles.sectionTitle}>Menu Items</Text>
+      
       <FlatList
-        data={filteredItems}
-        renderItem={renderMenuItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.menuList}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <FontAwesome name="search" size={50} color="#444" />
-            <Text style={styles.emptyText}>No items found</Text>
-            <Text style={styles.emptySubtext}>Try a different search or category</Text>
+        data={menuItems}
+        renderItem={({item}) => (
+          <View style={styles.itemCard}>
+            <Image source={{ uri: item.image }} style={styles.itemImage} />
+            <View style={styles.itemInfo}>
+              <Text style={styles.itemName}>{item.name}</Text>
+              <Text style={styles.itemPrice}>R {item.price.toFixed(2)}</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.cartButton}
+              onPress={() => handleAddToCart(item.name)}
+              activeOpacity={0.3}
+              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+            >
+              <Text style={styles.cartButtonText}>ADD</Text>
+            </TouchableOpacity>
           </View>
-        }
+        )}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.list}
       />
+
+      {/* DEBUG INFO */}
+      <View style={styles.debugInfo}>
+        <Text style={styles.debugText}>Debug Info:</Text>
+        <Text style={styles.debugText}>• React Native TouchableOpacity</Text>
+        <Text style={styles.debugText}>• Direct event handlers</Text>
+        <Text style={styles.debugText}>• No external dependencies</Text>
+        <Text style={styles.debugText}>• Check browser console (F12)</Text>
+      </View>
     </View>
   );
 }
 
+// MINIMAL STYLES - no complex properties
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1a1a1a',
+    paddingTop: 40,
   },
-  header: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: '#2d2d2d',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 5,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#FFD700',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2d2d2d',
-    marginHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 15,
-    paddingHorizontal: 15,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#444',
-  },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    height: 50,
-    color: '#FFFFFF',
-    fontSize: 16,
-  },
-  categoriesContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  categoryButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: '#2d2d2d',
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: '#444',
-  },
-  categoryButtonActive: {
-    backgroundColor: '#FFD700',
+  testPanel: {
+    backgroundColor: '#2a2a2a',
+    padding: 20,
+    margin: 20,
+    borderRadius: 10,
+    borderWidth: 3,
     borderColor: '#FFD700',
   },
-  categoryText: {
-    color: '#999',
-    fontWeight: '500',
+  testTitle: {
+    color: '#FFD700',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
   },
-  categoryTextActive: {
-    color: '#1a1a1a',
+  testLog: {
+    color: '#fff',
+    fontSize: 14,
+    marginBottom: 20,
+    textAlign: 'center',
+    backgroundColor: '#333',
+    padding: 10,
+    borderRadius: 5,
+  },
+  testButton: {
+    padding: 20,
+    borderRadius: 10,
+    marginBottom: 10,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  testButtonText: {
+    color: '#fff',
+    fontSize: 18,
     fontWeight: 'bold',
   },
-  menuList: {
-    paddingHorizontal: 20,
-    paddingBottom: 100,
+  sectionTitle: {
+    color: '#FFD700',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginLeft: 20,
+    marginBottom: 15,
   },
-  menuItem: {
+  list: {
+    paddingHorizontal: 20,
+  },
+  itemCard: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 10,
+    marginBottom: 15,
+    padding: 15,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2d2d2d',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
     borderWidth: 1,
     borderColor: '#444',
   },
   itemImage: {
-    width: 80,
-    height: 80,
+    width: 70,
+    height: 70,
     borderRadius: 8,
-    marginRight: 15,
   },
   itemInfo: {
     flex: 1,
+    marginLeft: 15,
+    marginRight: 15,
   },
   itemName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#fff',
     marginBottom: 5,
   },
-  itemDescription: {
-    fontSize: 14,
-    color: '#999',
-    marginBottom: 8,
-    lineHeight: 18,
-  },
   itemPrice: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#FFD700',
   },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 50,
+  cartButton: {
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 25,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#fff',
   },
-  emptyText: {
-    fontSize: 20,
-    color: '#FFFFFF',
-    marginTop: 20,
-    marginBottom: 10,
+  cartButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  emptySubtext: {
+  debugInfo: {
+    backgroundColor: '#333',
+    padding: 15,
+    margin: 20,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#666',
+  },
+  debugText: {
+    color: '#ccc',
     fontSize: 14,
-    color: '#999',
+    marginBottom: 5,
   },
 });

@@ -11,10 +11,9 @@ import {
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useAuth } from './contexts/AuthProvider';
-import { useCart } from './contexts/CartProvider';
-import { createOrder } from './services/database';
-import { Timestamp } from 'firebase/firestore';
+import { useAuth } from '@/contexts/AuthProvider';
+import { useCart } from '@/contexts/CartProvider';
+import { createOrder } from '@/services/database';
 
 export default function CheckoutScreen() {
   const { user } = useAuth();
@@ -59,17 +58,21 @@ export default function CheckoutScreen() {
       return;
     }
 
+    console.log('=== STARTING ORDER PLACEMENT ===');
+    console.log('User:', user?.uid);
+    console.log('Items count:', items.length);
+    console.log('Order total:', orderTotal);
+
     setPlacingOrder(true);
+
     try {
-      console.log('📦 Creating order...');
+      console.log('📦 Preparing order data...');
       
-      // Prepare order data EXACTLY matching the Order interface
-      // Note: Interface has BOTH 'total' AND 'totalAmount', BOTH 'phone' AND 'phoneNumber'
-      // We'll provide all required fields
+      // Prepare order data - MUST match Order interface exactly!
       const orderData = {
         userId: user.uid,
         userEmail: user.email || '',
-        userName: user.displayName || 'Customer',
+        userName: user.displayName || "Mzansi Customer",
         items: items.map(item => ({
           id: item.id || `item_${Date.now()}`,
           menuItemId: item.menuItemId || item.id || '',
@@ -77,65 +80,63 @@ export default function CheckoutScreen() {
           price: item.price,
           quantity: item.quantity,
           image: item.image || '',
-          imageUrl: item.imageUrl || item.image || '',
-          specialInstructions: item.specialInstructions || ''
         })),
-        // Both total fields (interface has both)
         total: orderTotal,
-        totalAmount: orderTotal,
-        // Both phone fields (interface has both)
         phone: phone.trim(),
-        phoneNumber: phone.trim(),
         address: address.trim(),
-        payment: paymentMethod, // 'payment' field
-        paymentMethod: paymentMethod, // 'paymentMethod' field
-        status: 'pending',
-        paymentStatus: paymentMethod === 'cash' ? 'pending' : 'completed' as 'pending' | 'completed' | 'failed',
+        paymentMethod: paymentMethod, // Must be 'cash' or 'card'
+        status: 'pending' as const, // Must be one of the allowed statuses
         deliveryFee: deliveryFee,
         tipAmount: tipValue,
-        tipPercentage: tipAmount,
         subtotal: total,
         specialInstructions: specialInstructions.trim(),
-        notes: `Tip: ${tipAmount}%`,
-        // createdAt and id will be added by createOrder function
+        // DO NOT include createdAt here - createOrder will add it
+        // DO NOT include id here - createOrder will add it
       };
 
-      console.log('📄 Order data:', orderData);
+      console.log('📄 Order data (matches Order interface):', JSON.stringify(orderData, null, 2));
       
-      // Call createOrder with the orderData object
+      console.log('🚀 Calling createOrder...');
       const order = await createOrder(orderData);
       
-      console.log('✅ Order saved to Firebase:', order.id);
+      console.log('✅ Order created successfully! ID:', order.id);
       
       // Clear cart
+      console.log('🗑️  Clearing cart...');
       await clearCart();
+      
+      console.log('🎉 Order placement complete!');
       
       Alert.alert(
         'Order Placed Successfully! 🎉',
         `Order #${order.id.substring(0, 8)} has been placed.\n\nTotal: R${orderTotal.toFixed(2)}\n\nYou will receive a confirmation shortly.`,
         [
           {
-            text: 'Track Order',
+            text: 'View Orders',
             onPress: () => {
-              router.push(`/order-details/${order.id}`);
+              router.push('/(tabs)/orders');
             }
           },
           {
             text: 'Continue Shopping',
             onPress: () => {
-              router.replace('/');
+              router.replace('/(tabs)/menu');
             },
             style: 'default'
           }
         ]
       );
     } catch (error: any) {
-      console.error('❌ Error placing order:', error);
+      console.error('❌ ERROR in handlePlaceOrder:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      
       Alert.alert(
         'Order Failed',
         error.message || 'Failed to place order. Please try again.'
       );
     } finally {
+      console.log('=== ORDER PLACEMENT FINISHED ===');
       setPlacingOrder(false);
     }
   };
@@ -154,241 +155,206 @@ export default function CheckoutScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
-          <FontAwesome name="arrow-left" size={24} color="#FFFFFF" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <FontAwesome name="chevron-left" size={24} color="#FFD700" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Checkout</Text>
-        <View style={{ width: 24 }} />
+        <Text style={styles.title}>Checkout</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Order Summary */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            Order Items ({items.length})
-            {items.length === 0 && ' - Cart is empty'}
-          </Text>
-          
-          {items.length > 0 ? (
-            items.map((item, index) => (
-              <View key={item.id || index} style={styles.cartItem}>
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemDetails}>
-                    {item.quantity} × {formatCurrency(item.price)}
-                  </Text>
-                </View>
-                <Text style={styles.itemTotal}>
-                  {formatCurrency(item.price * item.quantity)}
-                </Text>
-              </View>
-            ))
-          ) : (
-            <View style={styles.emptyCart}>
-              <FontAwesome name="shopping-cart" size={40} color="#666" />
-              <Text style={styles.emptyCartText}>Your cart is empty</Text>
+      {/* Order Summary */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>
+          <FontAwesome name="receipt" size={20} color="#FFD700" /> Order Summary
+        </Text>
+        
+        {items.map((item) => (
+          <View key={item.id} style={styles.orderItem}>
+            <View style={styles.orderItemInfo}>
+              <Text style={styles.orderItemName}>{item.name}</Text>
+              <Text style={styles.orderItemQuantity}>× {item.quantity}</Text>
             </View>
-          )}
+            <Text style={styles.orderItemPrice}>{formatCurrency(item.price * item.quantity)}</Text>
+          </View>
+        ))}
+
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Subtotal</Text>
+          <Text style={styles.summaryValue}>{formatCurrency(total)}</Text>
         </View>
 
-        {items.length > 0 && (
-          <>
-            {/* Delivery Details */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Delivery Details</Text>
-              
-              <View style={styles.inputContainer}>
-                <FontAwesome name="map-marker" size={20} color="#FFD700" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Delivery Address *"
-                  placeholderTextColor="#999"
-                  value={address}
-                  onChangeText={setAddress}
-                  multiline
-                  numberOfLines={3}
-                  editable={!placingOrder}
-                />
-              </View>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Delivery</Text>
+          <Text style={styles.summaryValue}>
+            {deliveryFee === 0 ? 'FREE' : formatCurrency(deliveryFee)}
+          </Text>
+        </View>
 
-              <View style={styles.inputContainer}>
-                <FontAwesome name="phone" size={20} color="#FFD700" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Phone Number *"
-                  placeholderTextColor="#999"
-                  value={phone}
-                  onChangeText={setPhone}
-                  keyboardType="phone-pad"
-                  editable={!placingOrder}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <FontAwesome name="sticky-note" size={20} color="#FFD700" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Special Instructions (optional)"
-                  placeholderTextColor="#999"
-                  value={specialInstructions}
-                  onChangeText={setSpecialInstructions}
-                  multiline
-                  numberOfLines={2}
-                  editable={!placingOrder}
-                />
-              </View>
-            </View>
-
-            {/* Tip Selection */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Add a Tip</Text>
-              <View style={styles.tipContainer}>
-                {[0, 5, 10, 15, 20].map((tip) => (
-                  <TouchableOpacity
-                    key={tip}
-                    style={[
-                      styles.tipButton,
-                      tipAmount === tip && styles.tipButtonSelected,
-                    ]}
-                    onPress={() => setTipAmount(tip)}
-                    activeOpacity={0.7}
-                    disabled={placingOrder}
-                  >
-                    <Text
-                      style={[
-                        styles.tipText,
-                        tipAmount === tip && styles.tipTextSelected,
-                      ]}
-                    >
-                      {tip === 0 ? 'No tip' : `${tip}%`}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Payment Method */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Payment Method</Text>
-              
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Tip ({tipAmount}%)</Text>
+          <View style={styles.tipButtons}>
+            {[0, 5, 10, 15].map((percent) => (
               <TouchableOpacity
+                key={percent}
                 style={[
-                  styles.paymentCard,
-                  paymentMethod === 'cash' && styles.paymentCardSelected,
+                  styles.tipButton,
+                  tipAmount === percent && styles.tipButtonActive
                 ]}
-                onPress={() => setPaymentMethod('cash')}
-                activeOpacity={0.7}
-                disabled={placingOrder}
+                onPress={() => setTipAmount(percent)}
               >
-                <FontAwesome name="money" size={24} color="#FFD700" />
-                <View style={styles.paymentInfo}>
-                  <Text style={styles.paymentTitle}>Cash on Delivery</Text>
-                  <Text style={styles.paymentDescription}>Pay when food arrives</Text>
-                </View>
-                {paymentMethod === 'cash' && (
-                  <FontAwesome name="check-circle" size={24} color="#4CAF50" />
-                )}
+                <Text style={[
+                  styles.tipButtonText,
+                  tipAmount === percent && styles.tipButtonTextActive
+                ]}>
+                  {percent}%
+                </Text>
               </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.summaryValue}>{formatCurrency(tipValue)}</Text>
+        </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.paymentCard,
-                  paymentMethod === 'card' && styles.paymentCardSelected,
-                ]}
-                onPress={() => setPaymentMethod('card')}
-                activeOpacity={0.7}
-                disabled={placingOrder}
-              >
-                <FontAwesome name="credit-card" size={24} color="#FFD700" />
-                <View style={styles.paymentInfo}>
-                  <Text style={styles.paymentTitle}>Card Payment</Text>
-                  <Text style={styles.paymentDescription}>Pay now with card</Text>
-                </View>
-                {paymentMethod === 'card' && (
-                  <FontAwesome name="check-circle" size={24} color="#4CAF50" />
-                )}
-              </TouchableOpacity>
-            </View>
+        <View style={[styles.summaryRow, styles.totalRow]}>
+          <Text style={styles.totalLabel}>Total</Text>
+          <Text style={styles.totalValue}>{formatCurrency(orderTotal)}</Text>
+        </View>
+      </View>
 
-            {/* Order Summary */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Order Summary</Text>
-              <View style={styles.summaryCard}>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Subtotal</Text>
-                  <Text style={styles.summaryValue}>{formatCurrency(total)}</Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Delivery Fee</Text>
-                  <Text style={styles.summaryValue}>
-                    {deliveryFee === 0 ? 'FREE' : formatCurrency(deliveryFee)}
-                  </Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Tip ({tipAmount}%)</Text>
-                  <Text style={styles.summaryValue}>{formatCurrency(tipValue)}</Text>
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.totalRow}>
-                  <Text style={styles.totalLabel}>Total</Text>
-                  <Text style={styles.totalValue}>{formatCurrency(orderTotal)}</Text>
-                </View>
-              </View>
-            </View>
-          </>
-        )}
+      {/* Delivery Details */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>
+          <FontAwesome name="map-marker" size={20} color="#FFD700" /> Delivery Details
+        </Text>
+        
+        <View style={styles.inputContainer}>
+          <FontAwesome name="map-pin" size={20} color="#999" style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Delivery Address"
+            placeholderTextColor="#999"
+            value={address}
+            onChangeText={setAddress}
+            multiline
+            numberOfLines={2}
+          />
+        </View>
 
-        <View style={styles.bottomSpacer} />
-      </ScrollView>
+        <View style={styles.inputContainer}>
+          <FontAwesome name="phone" size={20} color="#999" style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Phone Number"
+            placeholderTextColor="#999"
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <FontAwesome name="sticky-note" size={20} color="#999" style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Special Instructions (optional)"
+            placeholderTextColor="#999"
+            value={specialInstructions}
+            onChangeText={setSpecialInstructions}
+            multiline
+            numberOfLines={3}
+          />
+        </View>
+      </View>
+
+      {/* Payment Method */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>
+          <FontAwesome name="credit-card" size={20} color="#FFD700" /> Payment Method
+        </Text>
+        
+        <View style={styles.paymentMethods}>
+          <TouchableOpacity
+            style={[
+              styles.paymentMethod,
+              paymentMethod === 'cash' && styles.paymentMethodActive
+            ]}
+            onPress={() => setPaymentMethod('cash')}
+          >
+            <FontAwesome 
+              name="money" 
+              size={24} 
+              color={paymentMethod === 'cash' ? '#FFD700' : '#999'} 
+            />
+            <Text style={[
+              styles.paymentMethodText,
+              paymentMethod === 'cash' && styles.paymentMethodTextActive
+            ]}>
+              Cash
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.paymentMethod,
+              paymentMethod === 'card' && styles.paymentMethodActive
+            ]}
+            onPress={() => setPaymentMethod('card')}
+          >
+            <FontAwesome 
+              name="credit-card" 
+              size={24} 
+              color={paymentMethod === 'card' ? '#FFD700' : '#999'} 
+            />
+            <Text style={[
+              styles.paymentMethodText,
+              paymentMethod === 'card' && styles.paymentMethodTextActive
+            ]}>
+              Card
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       {/* Place Order Button */}
-      {items.length > 0 && (
-        <View style={styles.footer}>
-          <TouchableOpacity 
-            style={[
-              styles.placeOrderButton, 
-              (placingOrder || !user) && styles.placeOrderButtonDisabled
-            ]} 
-            onPress={handlePlaceOrder}
-            disabled={placingOrder || !user}
-            activeOpacity={0.7}
-          >
-            {placingOrder ? (
-              <View style={styles.processingContainer}>
-                <ActivityIndicator color="#1a1a1a" size="small" />
-                <Text style={styles.placeOrderText}>Processing Order...</Text>
-              </View>
-            ) : (
-              <>
-                <Text style={styles.placeOrderText}>
-                  {!user ? 'Login Required' : 'Place Order'}
-                </Text>
-                <Text style={styles.orderTotal}>{formatCurrency(orderTotal)}</Text>
-              </>
-            )}
-          </TouchableOpacity>
-          
-          {!user && (
-            <Text style={styles.loginHint}>
-              Please login to place your Mzansi Meals order
-            </Text>
+      <View style={styles.placeOrderSection}>
+        <TouchableOpacity
+          style={[
+            styles.placeOrderButton,
+            (placingOrder || !user) && styles.placeOrderButtonDisabled
+          ]}
+          onPress={handlePlaceOrder}
+          disabled={placingOrder || !user}
+        >
+          {placingOrder ? (
+            <ActivityIndicator color="#1a1a1a" size="small" />
+          ) : (
+            <>
+              <FontAwesome name="check-circle" size={20} color="#1a1a1a" />
+              <Text style={styles.placeOrderButtonText}>
+                {!user ? 'Login to Place Order' : `Place Order - ${formatCurrency(orderTotal)}`}
+              </Text>
+            </>
           )}
-        </View>
-      )}
-    </View>
+        </TouchableOpacity>
+        
+        {!user && (
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={() => router.push('/login')}
+          >
+            <Text style={styles.loginButtonText}>Login to Checkout</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </ScrollView>
   );
 }
 
+// ... (keep your existing styles - they're fine)
 const styles = StyleSheet.create({
+  // Copy all your styles from the previous file
   container: {
     flex: 1,
     backgroundColor: '#1a1a1a',
@@ -400,178 +366,132 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a1a',
   },
   loadingText: {
-    color: '#fff',
-    fontSize: 16,
-    marginTop: 10,
+    color: '#FFD700',
+    fontSize: 18,
+    marginTop: 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 20,
     paddingTop: 60,
-    paddingHorizontal: 20,
     paddingBottom: 20,
-    backgroundColor: '#2d2d2d',
   },
-  headerTitle: {
-    color: '#fff',
-    fontSize: 20,
+  backButton: {
+    padding: 10,
+  },
+  title: {
+    fontSize: 28,
     fontWeight: 'bold',
-  },
-  scrollContent: {
-    paddingBottom: 140,
-    paddingHorizontal: 20,
+    color: '#FFD700',
   },
   section: {
-    marginBottom: 25,
-    marginTop: 15,
+    backgroundColor: '#2a2a2a',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 20,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  placeOrderSection: {
+    backgroundColor: '#2a2a2a',
+    marginHorizontal: 20,
+    marginBottom: 40,
+    marginTop: 10,
+    padding: 20,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#333',
   },
   sectionTitle: {
-    color: '#fff',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 15,
+    color: '#FFD700',
+    marginBottom: 20,
   },
-  cartItem: {
+  orderItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#2d2d2d',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
+    marginBottom: 15,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#444',
   },
-  itemInfo: {
+  orderItemInfo: {
     flex: 1,
   },
-  itemName: {
+  orderItemName: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
     marginBottom: 5,
   },
-  itemDetails: {
+  orderItemQuantity: {
     color: '#999',
     fontSize: 14,
   },
-  itemTotal: {
+  orderItemPrice: {
     color: '#FFD700',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  emptyCart: {
-    alignItems: 'center',
-    padding: 40,
-    backgroundColor: '#2d2d2d',
-    borderRadius: 10,
-  },
-  emptyCartText: {
-    color: '#999',
-    fontSize: 16,
-    marginTop: 10,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#2d2d2d',
-    borderRadius: 10,
-    marginBottom: 15,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-  },
-  inputIcon: {
-    marginTop: 12,
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    color: '#fff',
-    fontSize: 16,
-    minHeight: 40,
-  },
-  tipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  tipButton: {
-    backgroundColor: '#2d2d2d',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    minWidth: 80,
-  },
-  tipButtonSelected: {
-    backgroundColor: '#FFD700',
-  },
-  tipText: {
-    color: '#fff',
-    fontSize: 16,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  tipTextSelected: {
-    color: '#1a1a1a',
-    fontWeight: 'bold',
-  },
-  paymentCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2d2d2d',
-    borderRadius: 10,
-    padding: 18,
-    marginBottom: 10,
-  },
-  paymentCardSelected: {
-    borderWidth: 2,
-    borderColor: '#FFD700',
-  },
-  paymentInfo: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  paymentTitle: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  paymentDescription: {
-    color: '#999',
-    fontSize: 14,
-  },
-  summaryCard: {
-    backgroundColor: '#2d2d2d',
-    borderRadius: 10,
-    padding: 20,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginTop: 10,
+    paddingVertical: 8,
+  },
+  tipButtons: {
+    flexDirection: 'row',
+    position: 'absolute',
+    left: 100,
+    right: 100,
+    justifyContent: 'center',
+    gap: 10,
+  },
+  tipButton: {
+    backgroundColor: '#3a3a3a',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#555',
+    minWidth: 50,
+    alignItems: 'center',
+  },
+  tipButtonActive: {
+    backgroundColor: '#FFD700',
+    borderColor: '#FFD700',
+  },
+  tipButtonText: {
+    color: '#ccc',
+    fontSize: 14,
+  },
+  tipButtonTextActive: {
+    color: '#1a1a1a',
+    fontWeight: 'bold',
   },
   summaryLabel: {
-    color: '#999',
+    color: '#ccc',
     fontSize: 16,
   },
   summaryValue: {
     color: '#fff',
     fontSize: 16,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#444',
-    marginVertical: 15,
+    fontWeight: '500',
   },
   totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#555',
+    marginTop: 15,
+    paddingTop: 15,
   },
   totalLabel: {
-    color: '#fff',
-    fontSize: 18,
+    color: '#FFD700',
+    fontSize: 20,
     fontWeight: 'bold',
   },
   totalValue: {
@@ -579,52 +499,84 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
-  bottomSpacer: {
-    height: 20,
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#3a3a3a',
+    borderRadius: 10,
+    marginBottom: 15,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#444',
   },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 20,
-    backgroundColor: '#2d2d2d',
-    borderTopWidth: 1,
-    borderTopColor: '#444',
+  inputIcon: {
+    marginTop: 5,
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 16,
+    paddingVertical: 5,
+  },
+  paymentMethods: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    gap: 10,
+  },
+  paymentMethod: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#3a3a3a',
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  paymentMethodActive: {
+    borderColor: '#FFD700',
+  },
+  paymentMethodText: {
+    color: '#ccc',
+    fontSize: 14,
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  paymentMethodTextActive: {
+    color: '#FFD700',
+    fontWeight: 'bold',
   },
   placeOrderButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: '#FFD700',
-    paddingHorizontal: 25,
-    paddingVertical: 18,
-    borderRadius: 12,
-  },
-  placeOrderButtonDisabled: {
-    backgroundColor: '#666',
-  },
-  processingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '100%',
-    gap: 10,
+    paddingVertical: 18,
+    borderRadius: 10,
+    marginBottom: 10,
   },
-  placeOrderText: {
+  placeOrderButtonDisabled: {
+    backgroundColor: '#666',
+    opacity: 0.7,
+  },
+  placeOrderButtonText: {
     color: '#1a1a1a',
     fontSize: 18,
     fontWeight: 'bold',
+    marginLeft: 10,
   },
-  orderTotal: {
-    color: '#1a1a1a',
-    fontSize: 20,
-    fontWeight: 'bold',
+  loginButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: 15,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FFD700',
+    borderRadius: 10,
   },
-  loginHint: {
-    color: '#FFA000',
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 10,
+  loginButtonText: {
+    color: '#FFD700',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
