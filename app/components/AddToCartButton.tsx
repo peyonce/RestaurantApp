@@ -15,14 +15,13 @@ export default function AddToCartButton({ item }: any) {
     
     setLoading(true);
     try {
-      await addToCart({
-        menuItemId: item.id,
-        name: item.name,
-        price: Number(item.price) || 0,
-        quantity: 1,
-        imageUrl: item.imageUrl
-      });
-      Alert.alert('Added', `${item.name} added to cart`);
+        await addToCart({
+          name: item.name,
+          price: Number(item.price) || 0,
+          quantity: 1,
+          image: item.image || item.imageUrl || "default-image",
+          menuItemId: item.id
+        });
     } catch (error) {
       console.error('Add to cart error:', error);
       Alert.alert('Error', 'Failed to add to cart');

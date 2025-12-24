@@ -1,19 +1,18 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import React from 'react';
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 export default function OrderDetailsScreen() {
   const { id } = useLocalSearchParams();
 
-  // Mock order data
   const order = {
     id: id || '1',
     restaurant: 'Mzansi Meals',
@@ -72,7 +71,7 @@ export default function OrderDetailsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+       
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <FontAwesome name="arrow-left" size={24} color="#FFFFFF" />
@@ -82,7 +81,7 @@ export default function OrderDetailsScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Order Status Banner */}
+        
         <View style={[styles.statusBanner, { backgroundColor: getStatusColor(order.status) + '20' }]}>
           <FontAwesome name={getStatusIcon(order.status)} size={24} color={getStatusColor(order.status)} />
           <View style={styles.statusInfo}>
@@ -95,7 +94,7 @@ export default function OrderDetailsScreen() {
           </View>
         </View>
 
-        {/* Order Info */}
+        
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Order Information</Text>
           <View style={styles.infoRow}>
@@ -112,7 +111,7 @@ export default function OrderDetailsScreen() {
           </View>
         </View>
 
-        {/* Order Items */}
+         
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Order Items</Text>
           {order.items.map((item) => (
@@ -132,7 +131,7 @@ export default function OrderDetailsScreen() {
           ))}
         </View>
 
-        {/* Delivery & Payment */}
+         
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Delivery & Payment</Text>
           <View style={styles.infoCard}>
@@ -151,7 +150,7 @@ export default function OrderDetailsScreen() {
           </View>
         </View>
 
-        {/* Order Summary */}
+         
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Order Summary</Text>
           <View style={styles.summaryRow}>
@@ -175,7 +174,7 @@ export default function OrderDetailsScreen() {
           </View>
         </View>
 
-        {/* Action Buttons */}
+         
         <View style={styles.actions}>
           <TouchableOpacity style={styles.reorderButton}>
             <FontAwesome name="repeat" size={20} color="#FFD700" />

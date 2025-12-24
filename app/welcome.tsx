@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
-import { Link } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
+import { Link } from 'expo-router';
+import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function HomeScreen() {
   return (
@@ -9,24 +9,20 @@ export default function HomeScreen() {
       style={styles.container}
       blurRadius={3}
     >
-      {/* Overlay */}
       <View style={styles.overlay} />
-      
-      {/* Content */}
       <View style={styles.content}>
-        {/* Logo */}
         <View style={styles.logoContainer}>
           <Text style={styles.logoIcon}>🍽️</Text>
           <Text style={styles.logoText}>Mzansi Meals</Text>
           <Text style={styles.logoSubtext}>Authentic South African Cuisine</Text>
         </View>
         
-        {/* Tagline */}
+         
         <Text style={styles.tagline}>
           Create your Mzansi Meals account{'\n'}and enjoy authentic South African cuisine
         </Text>
         
-        {/* Features */}
+         
         <View style={styles.features}>
           <View style={styles.featureItem}>
             <FontAwesome name="star" size={20} color="#FFD700" />
@@ -42,7 +38,7 @@ export default function HomeScreen() {
           </View>
         </View>
         
-        {/* Buttons */}
+         
         <View style={styles.buttonContainer}>
           <Link href="/login" asChild>
             <TouchableOpacity style={styles.primaryButton}>
@@ -58,7 +54,7 @@ export default function HomeScreen() {
           </Link>
         </View>
         
-        {/* Footer */}
+         
         <Text style={styles.footerText}>
           By continuing, you agree to our Terms & Privacy
         </Text>

@@ -1,8 +1,8 @@
 import { db } from '@/app/config/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { addDoc, collection } from 'firebase/firestore';
 
 export const seedSampleData = async () => {
-  console.log('🌱 Adding sample data to Firestore...');
+  console.log(' Adding sample data to Firestore...');
   
   try {
     // Add categories
@@ -15,10 +15,10 @@ export const seedSampleData = async () => {
 
     for (const cat of categories) {
       await addDoc(collection(db, 'categories'), cat);
-      console.log(`✅ Added category: ${cat.name}`);
+      console.log(` Added category: ${cat.name}`);
     }
 
-    // Add menu items
+     
     const menuItems = [
       {
         name: 'Truffle Burger',
@@ -96,13 +96,13 @@ export const seedSampleData = async () => {
 
     for (const item of menuItems) {
       await addDoc(collection(db, 'menuItems'), item);
-      console.log(`✅ Added menu item: ${item.name}`);
+      console.log(`Added menu item: ${item.name}`);
     }
 
-    console.log('🎉 Sample data added successfully!');
+    console.log('Sample data added successfully!');
     return true;
   } catch (error) {
-    console.error('❌ Error adding sample data:', error);
+    console.error('Error adding sample data:', error);
     return false;
   }
 };

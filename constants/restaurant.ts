@@ -1,4 +1,3 @@
-// Mzansi Meals Restaurant Constants
 export const RESTAURANT = {
   NAME: 'Mzansi Meals',
   SLOGAN: 'Taste the Rainbow Nation',
@@ -22,9 +21,9 @@ export const RESTAURANT = {
     FACEBOOK: 'MzansiMealsSA'
   },
   COLORS: {
-    PRIMARY: '#1a1a1a', // Dark
-    SECONDARY: '#FFD700', // Gold
-    ACCENT: '#E31B23' // South African red
+    PRIMARY: '#1a1a1a',  
+    SECONDARY: '#FFD700', 
+    ACCENT: '#E31B23'  
   }
 } as const;
 

@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
-import { 
-  View, Text, StyleSheet, Image, TouchableOpacity, 
-  ScrollView, Alert 
-} from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
-import { FontAwesome } from '@expo/vector-icons';
 import { useCart } from '@/contexts/CartProvider';
+import { FontAwesome } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 const menuItems = {
   '1': {
@@ -39,7 +44,6 @@ export default function MenuItemDetailScreen() {
   const menuItem = menuItems[id as keyof typeof menuItems] || menuItems['1'];
 
   const handleAddToCart = () => {
-    console.log('🎯 Add to Cart clicked for:', menuItem.name);
     
     addToCart({
       menuItemId: menuItem.id,
@@ -49,7 +53,7 @@ export default function MenuItemDetailScreen() {
       quantity: quantity
     });
     
-    Alert.alert('✅ Added!', `${quantity}x ${menuItem.name} added to cart`);
+    Alert.alert(' Added!', `${quantity}x ${menuItem.name} added to cart`);
   };
 
   return (
@@ -87,7 +91,6 @@ export default function MenuItemDetailScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* FIXED: Better button styling */}
         <TouchableOpacity 
           style={styles.addBtn}
           onPress={handleAddToCart}

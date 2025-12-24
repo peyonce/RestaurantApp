@@ -1,17 +1,15 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  Image, 
-  TouchableOpacity, 
-  TextInput,
-  Alert
-} from 'react-native';
 import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  Alert,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
-// SIMPLEST POSSIBLE VERSION - NO external dependencies
 const menuItems = [
   {
     id: '1',
@@ -31,23 +29,23 @@ export default function MenuScreen() {
   const router = useRouter();
   const [testLog, setTestLog] = useState('No clicks yet');
 
-  // ULTRA-SIMPLE handlers with immediate feedback
+   
   const handleBack = () => {
-    console.log('🔙 BACK button CLICKED at:', new Date().toISOString());
+    console.log('BACK button CLICKED at:', new Date().toISOString());
     setTestLog('Back button clicked at ' + new Date().toLocaleTimeString());
     setTimeout(() => {
       router.back();
     }, 100);
   };
 
-  const handleAddToCart = (itemName) => {
+  const handleAddToCart = (itemName: string) => {
     console.log('🛒 ADD TO CART clicked for:', itemName, 'at', new Date().toISOString());
     setTestLog(`Added ${itemName} at ` + new Date().toLocaleTimeString());
     Alert.alert('Success!', `Added ${itemName} to cart`);
   };
 
   const handleTestDirect = () => {
-    console.log('🎯 DIRECT TEST button clicked at:', new Date().toISOString());
+    console.log('DIRECT TEST button clicked at:', new Date().toISOString());
     setTestLog('Test button clicked at ' + new Date().toLocaleTimeString());
     Alert.alert('Direct Test', 'This button works directly!');
   };
@@ -56,7 +54,7 @@ export default function MenuScreen() {
 
   return (
     <View style={styles.container}>
-      {/* TEST PANEL - These MUST work if React Native works */}
+      
       <View style={styles.testPanel}>
         <Text style={styles.testTitle}>TOUCH TEST PANEL</Text>
         <Text style={styles.testLog}>Last action: {testLog}</Text>
@@ -80,7 +78,7 @@ export default function MenuScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* SIMPLE MENU ITEMS */}
+       
       <Text style={styles.sectionTitle}>Menu Items</Text>
       
       <FlatList
@@ -106,7 +104,6 @@ export default function MenuScreen() {
         contentContainerStyle={styles.list}
       />
 
-      {/* DEBUG INFO */}
       <View style={styles.debugInfo}>
         <Text style={styles.debugText}>Debug Info:</Text>
         <Text style={styles.debugText}>• React Native TouchableOpacity</Text>
@@ -118,7 +115,6 @@ export default function MenuScreen() {
   );
 }
 
-// MINIMAL STYLES - no complex properties
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -1,10 +1,9 @@
-import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
 import { db } from '@/app/config/firebase';
+import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
 
-// Create sample menu items for Mzansi Meals
 export const seedMenuItems = async () => {
   try {
-    console.log('🌱 Seeding Mzansi Meals menu items...');
+    console.log(' Seeding Mzansi Meals menu items...');
     
     const menuItems = [
       {
@@ -82,22 +81,22 @@ export const seedMenuItems = async () => {
           restaurantName: 'Mzansi Meals'
         });
         addedCount++;
-        console.log(`✅ Added: ${item.name}`);
+        console.log(`Added: ${item.name}`);
       } catch (error) {
-        console.error(`❌ Failed to add ${item.name}:`, error);
+        console.error(`Failed to add ${item.name}:`, error);
       }
     }
     
-    console.log(`🎉 Seeding complete! Added ${addedCount} items for Mzansi Meals`);
+    console.log(` Seeding complete! Added ${addedCount} items for Mzansi Meals`);
     return addedCount;
     
   } catch (error) {
-    console.error('❌ Seeding error:', error);
+    console.error('Seeding error:', error);
     throw error;
   }
 };
 
-// Seed restaurant information for Mzansi Meals
+ 
 export const seedRestaurantInfo = async () => {
   try {
     const restaurantInfo = {
@@ -125,47 +124,47 @@ export const seedRestaurantInfo = async () => {
       createdAt: new Date()
     });
     
-    console.log('✅ Restaurant info seeded: Mzansi Meals');
+    console.log('Restaurant info seeded: Mzansi Meals');
     return true;
     
   } catch (error) {
-    console.error('❌ Failed to seed restaurant info:', error);
+    console.error('Failed to seed restaurant info:', error);
     return false;
   }
 };
 
-// Initialize collections structure
+ 
 export const initializeCollections = async () => {
   try {
-    // Create empty collections if they don't exist
+     
     const collections = ['menuItems', 'orders', 'carts', 'users', 'restaurants'];
     
     for (const collectionName of collections) {
       const ref = collection(db, collectionName);
-      // Just creating a reference ensures collection exists
+       
       console.log(`Initialized ${collectionName} collection`);
     }
     
-    console.log('✅ All collections initialized for Mzansi Meals!');
+    console.log('All collections initialized for Mzansi Meals!');
   } catch (error) {
     console.error('Error initializing collections:', error);
   }
 };
 
-// Main seed function - run this to seed everything
+ 
 export const seedAllData = async () => {
-  console.log('🚀 Starting Mzansi Meals data seeding...');
+  console.log(' Starting Mzansi Meals data seeding...');
   
   try {
     await initializeCollections();
     await seedRestaurantInfo();
     await seedMenuItems();
     
-    console.log('🎉 All Mzansi Meals data seeded successfully!');
-    console.log('🏆 Your restaurant is now: MZANSI MEALS 🇿🇦');
+    console.log('All Mzansi Meals data seeded successfully!');
+    console.log('Your restaurant is now: MZANSI MEALS ');
     return true;
   } catch (error) {
-    console.error('❌ Failed to seed all data:', error);
+    console.error(' Failed to seed all data:', error);
     return false;
   }
 };

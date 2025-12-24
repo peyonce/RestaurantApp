@@ -1,21 +1,19 @@
+import { FontAwesome } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Alert,
   ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { router } from 'expo-router';
-import { useCart } from '../contexts/CartProvider';
 import { useAuth } from '../contexts/AuthProvider';
-import { FontAwesome } from '@expo/vector-icons';
-// Note: Commented out Firebase imports for now since we're using mock data
-// import { createOrder, createUserProfile, updateUserProfile, getUserProfile } from '../services/database';
-
+import { useCart } from '../contexts/CartProvider';
+ 
 export default function PaymentScreen() {
   const { items, total, clearCart } = useCart();
   const { user } = useAuth();
@@ -42,7 +40,7 @@ export default function PaymentScreen() {
     setLoading(true);
 
     try {
-      // Simulate payment processing
+       
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // In a real app with Firebase, you would:
@@ -130,7 +128,7 @@ export default function PaymentScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
+       
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <FontAwesome name="arrow-left" size={24} color="#FFFFFF" />
@@ -139,7 +137,7 @@ export default function PaymentScreen() {
         <View style={styles.headerPlaceholder} />
       </View>
 
-      {/* Order Summary */}
+       
       <View style={styles.summaryCard}>
         <Text style={styles.summaryTitle}>Order Summary</Text>
         
@@ -160,7 +158,7 @@ export default function PaymentScreen() {
         </View>
       </View>
 
-      {/* Payment Form */}
+       
       <View style={styles.paymentForm}>
         <Text style={styles.sectionTitle}>Card Details</Text>
 
@@ -217,7 +215,7 @@ export default function PaymentScreen() {
           </View>
         </View>
 
-        {/* Payment Methods */}
+         
         <Text style={[styles.sectionTitle, { marginTop: 30 }]}>Payment Methods</Text>
         
         <View style={styles.paymentMethods}>
@@ -238,7 +236,7 @@ export default function PaymentScreen() {
         </View>
       </View>
 
-      {/* Pay Button */}
+      
       <View style={styles.footer}>
         <TouchableOpacity
           style={[styles.payButton, loading && styles.payButtonDisabled]}

@@ -13,7 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useAuth } from '@/contexts/AuthProvider';
+import { useAuth } from '../../contexts/AuthProvider';
 
 export default function RegisterScreen() {
   const [formData, setFormData] = useState({

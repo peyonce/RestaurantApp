@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthProvider';
 import { useCart } from '@/contexts/CartProvider';
 import { createOrder } from '@/services/database';
+import { FontAwesome } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 export default function CheckoutScreen() {
   const { user } = useAuth();
@@ -31,7 +31,7 @@ export default function CheckoutScreen() {
     console.log('💰 Checkout - Total:', total);
   }, [items, total]);
 
-  // Calculate totals
+   
   const deliveryFee = total > 200 ? 0 : 25;
   const tipValue = (total * tipAmount) / 100;
   const orderTotal = total + deliveryFee + tipValue;
@@ -66,9 +66,8 @@ export default function CheckoutScreen() {
     setPlacingOrder(true);
 
     try {
-      console.log('📦 Preparing order data...');
+      console.log(' Preparing order data...');
       
-      // Prepare order data - MUST match Order interface exactly!
       const orderData = {
         userId: user.uid,
         userEmail: user.email || '',
@@ -84,50 +83,49 @@ export default function CheckoutScreen() {
         total: orderTotal,
         phone: phone.trim(),
         address: address.trim(),
-        paymentMethod: paymentMethod, // Must be 'cash' or 'card'
-        status: 'pending' as const, // Must be one of the allowed statuses
+        paymentMethod: paymentMethod,  
+        status: 'pending' as const,  
         deliveryFee: deliveryFee,
         tipAmount: tipValue,
         subtotal: total,
         specialInstructions: specialInstructions.trim(),
-        // DO NOT include createdAt here - createOrder will add it
-        // DO NOT include id here - createOrder will add it
+         
       };
 
-      console.log('📄 Order data (matches Order interface):', JSON.stringify(orderData, null, 2));
+      console.log('Order data (matches Order interface):', JSON.stringify(orderData, null, 2));
       
-      console.log('🚀 Calling createOrder...');
+      console.log(' Calling createOrder...');
       const order = await createOrder(orderData);
       
-      console.log('✅ Order created successfully! ID:', order.id);
+      console.log(' Order created successfully! ID:', order.id);
       
-      // Clear cart
-      console.log('🗑️  Clearing cart...');
+       
+      console.log(' Clearing cart...');
       await clearCart();
       
-      console.log('🎉 Order placement complete!');
+      console.log(' Order placement complete!');
       
       Alert.alert(
-        'Order Placed Successfully! 🎉',
+        'Order Placed Successfully! ',
         `Order #${order.id.substring(0, 8)} has been placed.\n\nTotal: R${orderTotal.toFixed(2)}\n\nYou will receive a confirmation shortly.`,
         [
           {
             text: 'View Orders',
             onPress: () => {
-              router.push('/(tabs)/orders');
+              router.push('/orders');
             }
           },
           {
             text: 'Continue Shopping',
             onPress: () => {
-              router.replace('/(tabs)/menu');
+              router.replace('/menu');
             },
             style: 'default'
           }
         ]
       );
     } catch (error: any) {
-      console.error('❌ ERROR in handlePlaceOrder:', error);
+      console.error(' ERROR in handlePlaceOrder:', error);
       console.error('Error message:', error.message);
       console.error('Error stack:', error.stack);
       
@@ -156,7 +154,7 @@ export default function CheckoutScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
+       
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <FontAwesome name="chevron-left" size={24} color="#FFD700" />
@@ -165,10 +163,10 @@ export default function CheckoutScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      {/* Order Summary */}
+       
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
-          <FontAwesome name="receipt" size={20} color="#FFD700" /> Order Summary
+          <FontAwesome name="file-text" size={20} color="#FFD700" /> Order Summary
         </Text>
         
         {items.map((item) => (
@@ -223,7 +221,7 @@ export default function CheckoutScreen() {
         </View>
       </View>
 
-      {/* Delivery Details */}
+       
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
           <FontAwesome name="map-marker" size={20} color="#FFD700" /> Delivery Details
@@ -268,7 +266,7 @@ export default function CheckoutScreen() {
         </View>
       </View>
 
-      {/* Payment Method */}
+       
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
           <FontAwesome name="credit-card" size={20} color="#FFD700" /> Payment Method
@@ -317,7 +315,7 @@ export default function CheckoutScreen() {
         </View>
       </View>
 
-      {/* Place Order Button */}
+       
       <View style={styles.placeOrderSection}>
         <TouchableOpacity
           style={[
@@ -352,9 +350,9 @@ export default function CheckoutScreen() {
   );
 }
 
-// ... (keep your existing styles - they're fine)
+
 const styles = StyleSheet.create({
-  // Copy all your styles from the previous file
+  
   container: {
     flex: 1,
     backgroundColor: '#1a1a1a',

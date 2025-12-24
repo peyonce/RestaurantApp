@@ -1,13 +1,11 @@
-// app/contexts/AuthProvider.tsx - COMPLETE FIREBASE AUTH
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { 
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  User as FirebaseUser
-} from 'firebase/auth';
 import { auth } from '@/app/config/firebase';
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut
+} from 'firebase/auth';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 interface AppUser {
   uid: string;

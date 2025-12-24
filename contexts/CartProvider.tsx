@@ -1,4 +1,4 @@
- import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { CartItem, clearUserCart, getUserCart, updateUserCart } from '../services/database';
 import { useAuth } from './AuthProvider';
 
@@ -6,7 +6,7 @@ interface CartContextType {
   items: CartItem[];
   total: number;
   loading: boolean;
-  itemCount: number;  // ADDED THIS
+  itemCount: number; 
   addToCart: (item: Omit<CartItem, 'id'>) => Promise<void>;
   removeItem: (itemId: string) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -29,16 +29,14 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Calculate itemCount from items
   const itemCount = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
-  // Load cart from Firebase when user changes
   useEffect(() => {
     const loadCart = async () => {
-      console.log('🔄 Loading cart, user:', user?.uid);
+      console.log(' Loading cart, user:', user?.uid);
       
       if (!user) {
-        console.log('👤 No user, clearing cart');
+        console.log(' No user, clearing cart');
         setItems([]);
         setTotal(0);
         setLoading(false);
@@ -48,16 +46,15 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(true);
       try {
         const cart = await getUserCart(user.uid);
-        console.log('📦 Cart loaded from Firebase:', cart);
+        console.log(' Cart loaded from Firebase:', cart);
         
-        // Ensure items is always an array
         const safeItems = Array.isArray(cart.items) ? cart.items : [];
         const safeTotal = typeof cart.total === 'number' ? cart.total : 0;
         
         setItems(safeItems);
         setTotal(safeTotal);
       } catch (error) {
-        console.error('❌ Error loading cart:', error);
+        console.error(' Error loading cart:', error);
         setItems([]);
         setTotal(0);
       } finally {
@@ -70,25 +67,24 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   const addToCart = async (itemData: Omit<CartItem, 'id'>) => {
     if (!user) {
-      console.error('❌ No user logged in');
+      console.error(' No user logged in');
       return;
     }
     
-    console.log('➕ Adding to cart:', itemData);
+    console.log('Adding to cart:', itemData);
     
     try {
-      // Generate unique ID
+       
       const newItem: CartItem = {
         ...itemData,
         id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       };
 
-      // Check if item already exists
       const existingIndex = items.findIndex(i => i.menuItemId === itemData.menuItemId);
       let newItems: CartItem[];
 
       if (existingIndex > -1) {
-        // Update quantity of existing item
+         
         newItems = items.map((item, index) =>
           index === existingIndex 
             ? { 
@@ -98,23 +94,21 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
             : item
         );
       } else {
-        // Add new item (ensure quantity exists)
+        
         newItems = [...items, { ...newItem, quantity: newItem.quantity || 1 }];
       }
 
-      console.log('📝 Saving updated items to Firebase:', newItems);
+      console.log('Saving updated items to Firebase:', newItems);
       
-      // Save to Firebase
       const updated = await updateUserCart(user.uid, newItems);
       
-      // Update local state
       setItems(updated.items || []);
       setTotal(updated.total || 0);
       
-      console.log('✅ Cart updated successfully');
+      console.log('Cart updated successfully');
     } catch (error) {
-      console.error('❌ Error adding to cart:', error);
-      // Fallback: update local state even if Firebase fails
+      console.error('Error adding to cart:', error);
+       
       const newItem: CartItem = {
         ...itemData,
         id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -145,7 +139,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       setTotal(updated.total || 0);
     } catch (error) {
       console.error('Error removing item:', error);
-      // Fallback
+       
       const newItems = items.filter(item => item.id !== itemId);
       setItems(newItems);
     }
@@ -168,7 +162,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       setTotal(updated.total || 0);
     } catch (error) {
       console.error('Error updating quantity:', error);
-      // Fallback
+       
       const newItems = items.map(item =>
         item.id === itemId ? { ...item, quantity } : item
       );
@@ -185,7 +179,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       setTotal(0);
     } catch (error) {
       console.error('Error clearing cart:', error);
-      // Fallback
+       
       setItems([]);
       setTotal(0);
     }
@@ -195,7 +189,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     items,
     total,
     loading,
-    itemCount,  // ADDED THIS
+    itemCount,   
     addToCart,
     removeItem,
     clearCart,

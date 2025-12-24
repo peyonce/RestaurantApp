@@ -1,5 +1,5 @@
-import { collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, getDoc, Timestamp, setDoc } from 'firebase/firestore';
 import { db } from '@/app/config/firebase';
+import { addDoc, collection, doc, getDoc, getDocs, query, setDoc, Timestamp, updateDoc, where } from 'firebase/firestore';
 
 export interface CartItem {
   id: string;
@@ -91,9 +91,9 @@ export const clearUserCart = async (userId: string): Promise<void> => {
 
 export const createOrder = async (orderData: Omit<Order, 'createdAt' | 'id'>): Promise<Order & {id: string}> => {
   try {
-    console.log('🔥 [Firebase] Creating order:', orderData);
+    console.log(' [Firebase] Creating order:', orderData);
     
-    // Validate items
+     
     if (!orderData.items || !Array.isArray(orderData.items)) {
       throw new Error('Invalid order items');
     }
@@ -104,17 +104,17 @@ export const createOrder = async (orderData: Omit<Order, 'createdAt' | 'id'>): P
       createdAt: Timestamp.now()
     };
     
-    console.log('🔥 [Firebase] Order to save:', order);
+    console.log(' [Firebase] Order to save:', order);
     
     const docRef = await addDoc(ordersRef, order);
-    console.log('🔥 [Firebase] Order created with ID:', docRef.id);
+    console.log('[Firebase] Order created with ID:', docRef.id);
     
     return { 
       id: docRef.id, 
       ...order 
     };
   } catch (error) {
-    console.error('🔥 [Firebase] Error creating order:', error);
+    console.error('[Firebase] Error creating order:', error);
     throw error;
   }
 };
@@ -152,10 +152,10 @@ export const getOrderById = async (orderId: string): Promise<Order | null> => {
   }
 };
 
-// Menu Functions
+ 
 export const getMenuItems = async (): Promise<any[]> => {
   try {
-    console.log('🔥 [Firebase] Getting menu items');
+    console.log('[Firebase] Getting menu items');
     const menuRef = collection(db, 'menuItems');
     const snapshot = await getDocs(menuRef);
     const items = snapshot.docs.map(doc => ({ 
@@ -163,17 +163,17 @@ export const getMenuItems = async (): Promise<any[]> => {
       ...doc.data(),
       price: Number(doc.data().price) || 0
     }));
-    console.log('🔥 [Firebase] Menu items retrieved:', items.length);
+    console.log('[Firebase] Menu items retrieved:', items.length);
     return items;
   } catch (error) {
-    console.error('🔥 [Firebase] Error getting menu items:', error);
+    console.error('[Firebase] Error getting menu items:', error);
     return [];
   }
 };
 
 export const getMenuItemById = async (itemId: string): Promise<any> => {
   try {
-    console.log('🔥 [Firebase] Getting menu item:', itemId);
+    console.log('[Firebase] Getting menu item:', itemId);
     const menuRef = doc(db, 'menuItems', itemId);
     const snapshot = await getDoc(menuRef);
     
@@ -183,14 +183,14 @@ export const getMenuItemById = async (itemId: string): Promise<any> => {
         ...snapshot.data(),
         price: Number(snapshot.data().price) || 0
       };
-      console.log('🔥 [Firebase] Menu item retrieved:', item);
+      console.log('[Firebase] Menu item retrieved:', item);
       return item;
     }
     
-    console.log('🔥 [Firebase] Menu item not found:', itemId);
+    console.log('[Firebase] Menu item not found:', itemId);
     return null;
   } catch (error) {
-    console.error('🔥 [Firebase] Error getting menu item:', error);
+    console.error('[Firebase] Error getting menu item:', error);
     return null;
   }
 };

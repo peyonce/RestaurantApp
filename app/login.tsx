@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthProvider';
+import { FontAwesome } from '@expo/vector-icons';
+import { Link, router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  Alert,
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
-import { Link, router } from 'expo-router';
-import { useAuth } from '@/contexts/AuthProvider';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -24,13 +24,13 @@ export default function LoginScreen() {
 
   const { signIn, user } = useAuth();
 
-  // If user is already logged in, redirect to home
+   
   useEffect(() => {
     if (user && !hasRedirected) {
       setHasRedirected(true);
       console.log('User already logged in, redirecting...');
       const timer = setTimeout(() => {
-        router.replace('/(tabs)');
+        console.log("DEBUG: Auto-redirecting to home"); router.replace('/(tabs)/home');
       }, 500);
       return () => clearTimeout(timer);
     }
@@ -46,21 +46,21 @@ export default function LoginScreen() {
     try {
       console.log('Attempting login for:', email);
       
-      // Call signIn and wait for it to complete
+       
       const result = await signIn(email, password);
       
       console.log('Login result:', result);
       
       if (result && result.success) {
-        // Success! AuthProvider should update user state
+         
         Alert.alert('Success', 'Logged in successfully!', [
           { 
             text: 'OK', 
             onPress: () => {
-              // Give a moment for state to update, then check user
+               
               setTimeout(() => {
                 if (user) {
-                  router.replace('/(tabs)');
+                  console.log("DEBUG: Login success, redirecting to home"); router.replace('/(tabs)/home');
                 }
               }, 1000);
             }
@@ -77,7 +77,7 @@ export default function LoginScreen() {
     }
   };
 
-  // Show loading if redirecting
+  
   if (hasRedirected && user) {
     return (
       <View style={styles.loadingContainer}>
@@ -96,15 +96,15 @@ export default function LoginScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+         
         <View style={styles.header}>
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Sign in to access your Mzansi Meals account</Text>
         </View>
 
-        {/* Form */}
+         
         <View style={styles.form}>
-          {/* Email Input */}
+           
           <View style={styles.inputContainer}>
             <FontAwesome name="envelope" size={20} color="#999" style={styles.inputIcon} />
             <TextInput
@@ -119,7 +119,7 @@ export default function LoginScreen() {
             />
           </View>
 
-          {/* Password Input */}
+           
           <View style={styles.inputContainer}>
             <FontAwesome name="lock" size={20} color="#999" style={styles.inputIcon} />
             <TextInput
@@ -144,12 +144,12 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Forgot Password */}
+           
           <TouchableOpacity style={styles.forgotPassword}>
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
           </TouchableOpacity>
 
-          {/* Login Button */}
+           
           <TouchableOpacity
             style={[styles.loginButton, loading && styles.loginButtonDisabled]}
             onPress={handleLogin}
@@ -162,7 +162,7 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
 
-          {/* Register Link */}
+           
           <View style={styles.registerContainer}>
             <Text style={styles.registerText}>Don't have an account? </Text>
             <Link href="/register" asChild>
@@ -172,7 +172,7 @@ export default function LoginScreen() {
             </Link>
           </View>
 
-          {/* Guest Option */}
+           
           <View style={styles.guestContainer}>
             <Text style={styles.guestText}>Or continue as </Text>
             <Link href="/(tabs)" asChild>
