@@ -1,6 +1,6 @@
-import { FontAwesome } from '@expo/vector-icons';
+  import { FontAwesome } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
-import React, { useEffect, useState, useRef } from 'react'; // Added useRef
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,7 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useAuth } from '../../contexts/AuthProvider';
+import { useAuth } from '../contexts/AuthProvider';
 
 export default function RegisterScreen() {
   const [formData, setFormData] = useState({
@@ -25,8 +25,8 @@ export default function RegisterScreen() {
   });
   const { signUp: register, loading: isLoading, user } = useAuth();
   const [showSuccess, setShowSuccess] = useState(false);
-  const [hasRedirected, setHasRedirected] = useState(false); // NEW: Track redirects
-  const redirectTimeoutRef = useRef<NodeJS.Timeout | null>(null); // NEW: Track timeout
+  const [hasRedirected, setHasRedirected] = useState(false);  
+  const redirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);  
   const router = useRouter();
 
   console.log('DEBUG - isLoading:', isLoading);
@@ -37,26 +37,21 @@ export default function RegisterScreen() {
     formData.password && formData.confirmPassword
   );
 
-  // FIXED: Check if user is logged in and redirect (with protection)
   useEffect(() => {
-    // Only redirect if user exists AND we haven't redirected already
     if (user && !hasRedirected) {
       console.log('DEBUG - User detected, will redirect...');
       setHasRedirected(true);
       
-      // Clear any existing timeout
       if (redirectTimeoutRef.current) {
         clearTimeout(redirectTimeoutRef.current);
       }
       
-      // Set a new timeout for redirect
       redirectTimeoutRef.current = setTimeout(() => {
         console.log('DEBUG - Redirecting to home...');
-        router.replace('/(tabs)');
+        router.replace('/(tabs)/home');
       }, 1000);
     }
     
-    // Cleanup function
     return () => {
       if (redirectTimeoutRef.current) {
         clearTimeout(redirectTimeoutRef.current);
@@ -69,7 +64,6 @@ export default function RegisterScreen() {
     
     const { name, surname, email, password, confirmPassword } = formData;
 
-    // Validation
     if (!name || !surname || !email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
@@ -98,22 +92,23 @@ export default function RegisterScreen() {
     console.log('DEBUG - Register result:', result);
 
     if (result.success) {
-      // Show success tick
       setShowSuccess(true);
-      
-      // Show success message but don't auto-redirect here
-      // The useEffect will handle the redirect when user state updates
       Alert.alert('Success', result.message || 'Account created successfully!', [
         { text: 'OK' }
       ]);
       
-      // DON'T set a redirect timeout here - let the useEffect handle it
+      // Auto-redirect after successful registration
+      setTimeout(() => {
+        if (user) {
+          router.replace('/(tabs)/home');
+        }
+      }, 1500);
+      
     } else {
       Alert.alert('Signup Failed', result.message || 'Failed to create account');
     }
   };
 
-  // Calculate if button should be disabled
   const isFormValid = () => {
     const { name, surname, email, password, confirmPassword } = formData;
     return name && surname && email && password && confirmPassword && 
@@ -121,7 +116,6 @@ export default function RegisterScreen() {
            password.length >= 6;
   };
 
-  // Show loading/redirecting screen
   if (hasRedirected && user) {
     return (
       <View style={styles.loadingScreen}>

@@ -39,7 +39,7 @@ export default function MenuScreen() {
   };
 
   const handleAddToCart = (itemName: string) => {
-    console.log('🛒 ADD TO CART clicked for:', itemName, 'at', new Date().toISOString());
+    console.log(' ADD TO CART clicked for:', itemName, 'at', new Date().toISOString());
     setTestLog(`Added ${itemName} at ` + new Date().toLocaleTimeString());
     Alert.alert('Success!', `Added ${itemName} to cart`);
   };
@@ -50,7 +50,7 @@ export default function MenuScreen() {
     Alert.alert('Direct Test', 'This button works directly!');
   };
 
-  console.log('🔄 MenuScreen rendered at:', new Date().toISOString());
+  console.log(' MenuScreen rendered at:', new Date().toISOString());
 
   return (
     <View style={styles.container}>

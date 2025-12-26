@@ -11,7 +11,7 @@
   updateDoc,
   where
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db } from '../app/config/firebase';
 
 export interface Booking {
   id?: string;

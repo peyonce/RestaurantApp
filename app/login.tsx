@@ -1,4 +1,4 @@
-import { FontAwesome } from '@expo/vector-icons';
+ import { FontAwesome } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -24,13 +24,12 @@ export default function LoginScreen() {
 
   const { signIn, user } = useAuth();
 
-   
   useEffect(() => {
     if (user && !hasRedirected) {
       setHasRedirected(true);
       console.log('User already logged in, redirecting...');
       const timer = setTimeout(() => {
-        router.replace('/(tabs)/');
+        router.replace('/(tabs)/home');
       }, 500);
       return () => clearTimeout(timer);
     }
@@ -46,21 +45,18 @@ export default function LoginScreen() {
     try {
       console.log('Attempting login for:', email);
       
-       
       const result = await signIn(email, password);
       
       console.log('Login result:', result);
       
       if (result && result.success) {
-         
         Alert.alert('Success', 'Logged in successfully!', [
           { 
             text: 'OK', 
             onPress: () => {
-               
               setTimeout(() => {
                 if (user) {
-                  router.replace('/(tabs)');
+                  router.replace('/(tabs)/home');
                 }
               }, 1000);
             }
@@ -77,7 +73,11 @@ export default function LoginScreen() {
     }
   };
 
-  
+  const handleGuestLogin = () => {
+    console.log('Guest login clicked');
+    router.replace('/(tabs)/home');
+  };
+
   if (hasRedirected && user) {
     return (
       <View style={styles.loadingContainer}>
@@ -96,15 +96,12 @@ export default function LoginScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-         
         <View style={styles.header}>
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Sign in to access your Mzansi Meals account</Text>
         </View>
 
-         
         <View style={styles.form}>
-           
           <View style={styles.inputContainer}>
             <FontAwesome name="envelope" size={20} color="#999" style={styles.inputIcon} />
             <TextInput
@@ -119,7 +116,6 @@ export default function LoginScreen() {
             />
           </View>
 
-           
           <View style={styles.inputContainer}>
             <FontAwesome name="lock" size={20} color="#999" style={styles.inputIcon} />
             <TextInput
@@ -144,12 +140,10 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-           
           <TouchableOpacity style={styles.forgotPassword}>
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
           </TouchableOpacity>
 
-           
           <TouchableOpacity
             style={[styles.loginButton, loading && styles.loginButtonDisabled]}
             onPress={handleLogin}
@@ -162,7 +156,6 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
 
-           
           <View style={styles.registerContainer}>
             <Text style={styles.registerText}>Don't have an account? </Text>
             <Link href="/register" asChild>
@@ -172,14 +165,14 @@ export default function LoginScreen() {
             </Link>
           </View>
 
-           
           <View style={styles.guestContainer}>
             <Text style={styles.guestText}>Or continue as </Text>
-            <Link style="/(tabs)" asChild>
-              <TouchableOpacity disabled={loading}>
-                <Text style={styles.guestLink}>Guest</Text>
-              </TouchableOpacity>
-            </Link>
+            <TouchableOpacity 
+              disabled={loading}
+              onPress={handleGuestLogin}
+            >
+              <Text style={styles.guestLink}>Guest</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
