@@ -6,7 +6,7 @@
   getDoc,
   getDocs,
   orderBy,
-  query, // Added
+  query,
   Timestamp,
   updateDoc,
   where
@@ -18,8 +18,8 @@ export interface Booking {
   userId: string;
   restaurantId: string;
   restaurantName: string;
-  date: string; // YYYY-MM-DD format
-  time: string; // HH:MM format
+  date: string;  
+  time: string; 
   guests: number;
   specialRequests?: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
@@ -37,7 +37,7 @@ const validateBookingData = (bookingData: {
   guests: number;
   specialRequests?: string;
 }) => {
-  // Required fields
+  
   if (!bookingData.userId?.trim()) {
     throw new Error('User ID is required');
   }
@@ -54,12 +54,12 @@ const validateBookingData = (bookingData: {
     throw new Error('Time is required');
   }
 
-  // Guests validation
+   
   if (!Number.isInteger(bookingData.guests) || bookingData.guests < 1 || bookingData.guests > 50) {
     throw new Error('Number of guests must be between 1 and 50');
   }
 
-  // Date validation
+   
   const bookingDate = new Date(bookingData.date);
   if (isNaN(bookingDate.getTime())) {
     throw new Error('Invalid date format. Use YYYY-MM-DD');
@@ -71,14 +71,14 @@ const validateBookingData = (bookingData: {
     throw new Error('Booking date cannot be in the past');
   }
 
-  // Time validation (basic format check)
+   
   const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
   if (!timeRegex.test(bookingData.time)) {
     throw new Error('Invalid time format. Use HH:MM (24-hour format)');
   }
 };
 
-// SIMPLER VERSION: Accepts complete booking data
+ 
 export const createBooking = async (bookingData: {
   userId: string;
   restaurantId: string;
@@ -89,7 +89,7 @@ export const createBooking = async (bookingData: {
   specialRequests?: string;
 }) => {
   try {
-    // Validate input
+     
     validateBookingData(bookingData);
 
     const booking: Omit<Booking, 'id'> = {
@@ -115,7 +115,7 @@ export const createBooking = async (bookingData: {
   } catch (error) {
     console.error('Error creating booking:', error);
     if (error instanceof Error) {
-      throw error; // Re-throw validation errors
+      throw error;  
     }
     throw new Error('Failed to create booking');
   }
@@ -202,7 +202,7 @@ export const updateBooking = async (
       throw new Error('Booking ID is required');
     }
 
-    // If date is being updated, validate it
+     
     if (updates.date) {
       const bookingDate = new Date(updates.date);
       if (isNaN(bookingDate.getTime())) {
@@ -215,15 +215,14 @@ export const updateBooking = async (
       }
     }
 
-    // If time is being updated, validate format
+     
     if (updates.time) {
       const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
       if (!timeRegex.test(updates.time)) {
         throw new Error('Invalid time format. Use HH:MM (24-hour format)');
       }
     }
-
-    // If guests is being updated, validate range
+ 
     if (updates.guests !== undefined) {
       if (!Number.isInteger(updates.guests) || updates.guests < 1 || updates.guests > 50) {
         throw new Error('Number of guests must be between 1 and 50');
@@ -326,7 +325,7 @@ export const getBookingStats = async (userId: string) => {
   }
 };
 
-// Get bookings by restaurant
+ 
 export const getRestaurantBookings = async (restaurantId: string): Promise<Booking[]> => {
   try {
     if (!restaurantId?.trim()) {
@@ -367,7 +366,7 @@ export const getRestaurantBookings = async (restaurantId: string): Promise<Booki
   }
 };
 
-// Get upcoming bookings for a user
+
 export const getUpcomingBookings = async (userId: string): Promise<Booking[]> => {
   try {
     const bookings = await getUserBookings(userId);
@@ -381,7 +380,7 @@ export const getUpcomingBookings = async (userId: string): Promise<Booking[]> =>
     }).sort((a, b) => {
       const dateA = new Date(a.date + ' ' + a.time);
       const dateB = new Date(b.date + ' ' + b.time);
-      return dateA.getTime() - dateB.getTime(); // Sort by date/time ascending
+      return dateA.getTime() - dateB.getTime();  
     });
   } catch (error) {
     console.error('Error fetching upcoming bookings:', error);
