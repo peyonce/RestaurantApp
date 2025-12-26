@@ -1,4 +1,3 @@
-import { useAuth } from '../contexts/AuthProvider';
 import { FontAwesome } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -14,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useAuth } from '../contexts/AuthProvider';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -30,7 +30,7 @@ export default function LoginScreen() {
       setHasRedirected(true);
       console.log('User already logged in, redirecting...');
       const timer = setTimeout(() => {
-        console.log("DEBUG: Auto-redirecting to home"); router.replace('/(tabs)/home');
+        router.replace('/(tabs)/');
       }, 500);
       return () => clearTimeout(timer);
     }
@@ -60,7 +60,7 @@ export default function LoginScreen() {
                
               setTimeout(() => {
                 if (user) {
-                  console.log("DEBUG: Login success, redirecting to home"); router.replace('/(tabs)/home');
+                  router.replace('/(tabs)');
                 }
               }, 1000);
             }
@@ -175,7 +175,7 @@ export default function LoginScreen() {
            
           <View style={styles.guestContainer}>
             <Text style={styles.guestText}>Or continue as </Text>
-            <Link href="/(tabs)" asChild>
+            <Link style="/(tabs)" asChild>
               <TouchableOpacity disabled={loading}>
                 <Text style={styles.guestLink}>Guest</Text>
               </TouchableOpacity>
