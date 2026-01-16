@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
+import React from 'react';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const featuredItems = [
   { 
@@ -69,7 +69,7 @@ export default function HomeScreen() {
       </View>
 
       {/* Featured Items */}
-      <Text style={styles.menuTitle}>Chef\'s Recommendations</Text>
+      <Text style={styles.menuTitle}>Chef's Recommendations</Text>
       
       {featuredItems.map((item) => (
         <Link key={item.id} href={`/menu/${item.id}`} asChild>
