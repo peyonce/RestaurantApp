@@ -1,15 +1,13 @@
-import React from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity,
-  Image,
-  ActivityIndicator
-} from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import React from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 export default function OrdersScreen() {
   const orders = [
@@ -88,13 +86,13 @@ export default function OrdersScreen() {
   };
 
   const handleReorder = (order: any) => {
-    // In a real app, this would re-add items to cart
+     
     alert(`Reordering from ${order.restaurant} - ${formatCurrency(order.total)}`);
   };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+       
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mzansi Meals Orders</Text>
         <Text style={styles.headerSubtitle}>Your South African food journey</Text>

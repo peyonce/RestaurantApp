@@ -74,13 +74,13 @@ export default function ProfileScreen() {
     
     setLoading(true);
     try {
-      // Update Firebase Auth profile
+       
       await updateProfile(user, { displayName: userName });
       if (userEmail !== user.email) {
         await updateEmail(user, userEmail);
       }
       
-      // Update Firestore user document
+       
       await updateDoc(doc(db, 'users', user.uid), {
         phoneNumber,
         address,
@@ -126,13 +126,13 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
+       
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mzansi Meals Profile</Text>
         <Text style={styles.headerSubtitle}>Manage your South African food experience</Text>
       </View>
 
-      {/* Profile Card */}
+       
       <View style={styles.profileCard}>
         <View style={styles.avatarContainer}>
           <View style={styles.avatar}>
@@ -167,7 +167,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Menu Items */}
+       
       <View style={styles.menuSection}>
         <Text style={styles.sectionTitle}>Account Settings</Text>
         
@@ -227,7 +227,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Help Section */}
+       
       <View style={styles.menuSection}>
         <Text style={styles.sectionTitle}>Help & Support</Text>
         
@@ -256,7 +256,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Sign Out Button */}
+       
       <TouchableOpacity 
         style={styles.signOutButton}
         onPress={handleSignOut}
@@ -265,7 +265,7 @@ export default function ProfileScreen() {
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
 
-      {/* Edit Profile Modal */}
+       
       <Modal
         visible={showEditProfile}
         animationType="slide"
@@ -355,7 +355,7 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Payment Modal */}
+       
       <Modal
         visible={showPayment}
         animationType="slide"
@@ -399,7 +399,7 @@ export default function ProfileScreen() {
               </View>
               
               <Text style={styles.securityNote}>
-                🔒 Your payment information is securely encrypted
+                 Your payment information is securely encrypted
               </Text>
             </View>
             
@@ -422,7 +422,7 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Notifications Modal */}
+       
       <Modal
         visible={showNotifications}
         animationType="slide"

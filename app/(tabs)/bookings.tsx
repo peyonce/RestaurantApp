@@ -1,15 +1,15 @@
+import { FontAwesome } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
   Alert,
   Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
 
 export default function BookingsScreen() {
   const [bookings, setBookings] = useState([
@@ -40,7 +40,6 @@ export default function BookingsScreen() {
 
     setLoading(true);
 
-    // Simulate API call
     setTimeout(() => {
       const newBookingItem = {
         id: Date.now().toString(),
@@ -54,7 +53,6 @@ export default function BookingsScreen() {
       setLoading(false);
       setShowBookingForm(false);
       
-      // Reset form
       setNewBooking({
         date: '',
         time: '',
@@ -90,7 +88,7 @@ export default function BookingsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+       
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Bookings</Text>
         <Text style={styles.headerSubtitle}>Mzansi Meals Restaurant</Text>
@@ -105,7 +103,7 @@ export default function BookingsScreen() {
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Booking List */}
+         
         {bookings.length === 0 ? (
           <View style={styles.emptyState}>
             <FontAwesome name="calendar-times-o" size={60} color="#666" />
@@ -145,7 +143,7 @@ export default function BookingsScreen() {
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Booking Form Modal */}
+       
       <Modal
         visible={showBookingForm}
         animationType="slide"
@@ -341,7 +339,7 @@ const styles = StyleSheet.create({
   bottomSpacer: {
     height: 100,
   },
-  // Modal Styles
+   
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.8)',

@@ -40,7 +40,7 @@ const featuredItems = [
 export default function HomeScreen() {
   return (
     <ScrollView style={styles.container}>
-      {/* Hero Section */}
+      
       <View style={styles.hero}>
         <Image
           source={{ uri: 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=1200&fit=crop' }}
@@ -58,7 +58,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Welcome Section */}
+       
       <View style={styles.welcomeSection}>
         <Text style={styles.welcomeTitle}>Welcome to Mzansi Meals</Text>
         <Text style={styles.welcomeText}>
@@ -68,7 +68,7 @@ export default function HomeScreen() {
         </Text>
       </View>
 
-      {/* Featured Items */}
+       
       <Text style={styles.menuTitle}>Chef's Recommendations</Text>
       
       {featuredItems.map((item) => (
@@ -87,7 +87,7 @@ export default function HomeScreen() {
         </Link>
       ))}
 
-      {/* Call to Action */}
+       
       <View style={styles.ctaSection}>
         <Text style={styles.ctaTitle}>Ready to Taste South Africa?</Text>
         <Text style={styles.ctaSubtitle}>Explore our full menu or book a table</Text>

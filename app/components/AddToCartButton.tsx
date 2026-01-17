@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { TouchableOpacity, Text, Alert, ActivityIndicator, StyleSheet } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
 import { useCart } from '@contexts/CartProvider';
+import { FontAwesome } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 export default function AddToCartButton({ item }: any) {
   const { addToCart } = useCart();
@@ -65,6 +65,6 @@ const styles = StyleSheet.create({
   text: { 
     color: '#000', 
     fontSize: 14, 
-    fontWeight: '600' as const // Changed from 'bold' to '600'
+    fontWeight: '600' as const  
   }
 });

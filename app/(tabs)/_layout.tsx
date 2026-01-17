@@ -1,4 +1,3 @@
- // app/(tabs)/_layout.tsx
 import { FontAwesome } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 
@@ -34,7 +33,7 @@ export default function TabLayout() {
         options={{
           title: 'Cart',
           tabBarIcon: ({ color }) => <FontAwesome name="shopping-cart" size={24} color={color} />,
-          tabBarBadge: 3, // Optional: show cart item count
+          tabBarBadge: 3,  
         }}
       />
       <Tabs.Screen

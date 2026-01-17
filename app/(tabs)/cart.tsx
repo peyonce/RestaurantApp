@@ -71,7 +71,7 @@ export default function CartScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+       
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <FontAwesome name="arrow-left" size={24} color="#FFFFFF" />
@@ -88,7 +88,7 @@ export default function CartScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Cart Items */}
+         
         {items.length === 0 ? (
           <View style={styles.emptyCart}>
             <FontAwesome name="shopping-cart" size={80} color="#666" />
@@ -159,7 +159,7 @@ export default function CartScreen() {
               ))}
             </View>
 
-            {/* Order Summary */}
+             
             <View style={styles.summaryCard}>
               <Text style={styles.summaryTitle}>Order Summary</Text>
               
@@ -184,13 +184,13 @@ export default function CartScreen() {
               
               <Text style={styles.deliveryNote}>
                 {total > 200 
-                  ? '🎉 You qualify for FREE delivery!'
+                  ? ' You qualify for FREE delivery!'
                   : `Add R${(200 - total).toFixed(2)} more for FREE delivery`
                 }
               </Text>
             </View>
 
-            {/* Special Offer */}
+             
             {total < 200 && (
               <View style={styles.offerCard}>
                 <FontAwesome name="gift" size={24} color="#FFD700" />
@@ -208,7 +208,7 @@ export default function CartScreen() {
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Checkout Button */}
+       
       {items.length > 0 && (
         <View style={styles.footer}>
           <TouchableOpacity 
